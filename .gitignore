@@ -1,0 +1,4 @@
+/target
+/.env
+# sqlx 오프라인 캐시는 쓰지 않는다 — 빌드는 DATABASE_URL 의 실제 DB 로 검증
+/.sqlx

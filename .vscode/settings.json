@@ -1,0 +1,30 @@
+{
+  // 개발 중 볼 일 없는 것 — 빌드 산출물·락 파일·캐시. 탐색기에서만 숨긴다(검색·git 에는 영향 없음).
+  "files.exclude": {
+    "Cargo.toml": true,
+    "rustfmt.toml": true,
+    "**/target": true,
+    "**/Cargo.lock": true,
+    "**/package-lock.json": true,
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/*.tsbuildinfo": true,
+    "**/.sqlx": true,
+    "**/.DS_Store": true
+  },
+  // 검색·파일 감시에서도 무거운 것은 뺀다
+  "search.exclude": {
+    "**/target": true,
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/Cargo.lock": true,
+    "**/package-lock.json": true,
+    ".claude/reference/openship": true
+  },
+  "files.watcherExclude": {
+    "**/target/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    ".claude/reference/openship/**": true
+  }
+}

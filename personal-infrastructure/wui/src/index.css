@@ -1,0 +1,166 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+@import "tailwindcss";
+
+/* 디자인 시스템 — .claude/rules/wui/design.md. 다크가 기본, 라이트는 data-theme="light". 값은 CSS 변수라 테마가 바뀌면 전부 따라온다. */
+:root, [data-theme="dark"] {
+  --bg: #0b0d12; --card: #141821; --c2: #1b2130; --c3: #262e40; --c4: #313a50; --card-2: var(--c2); --card-3: var(--c3); --popup: #1b2130; /* 팝업 바탕 — 다크는 card-2(한 단계 위), 라이트는 흰 card(회색 바탕 위에서 떠 보이게) */
+  --text: #f1f4fa; --body: #c3cad8; --mute: #8a93a8; --line: #262e40;
+  --on-pill: #ffffff; --pill-on: #3d7bff;
+  --accent: #3d7bff; --info: #3d7bff; --good: #12b76a; --warn: #f59e0b; --bad: #ef4444;
+  --terminal: #080a0f; --grid: #7ea2ff1f;
+  --gauge: linear-gradient(90deg, #22d3ee, #3d7bff 55%, #8b5cf6);
+}
+[data-theme="light"] {
+  --bg: #eef2f9; --card: #ffffff; --c2: #e6ebf4; --c3: #d8dfec; --c4: #c9d2e2; --card-2: var(--c2); --card-3: var(--c3); --popup: #ffffff;
+  --text: #0f172a; --body: #334155; --mute: #566580; --line: #dbe2ee;
+  --on-pill: #ffffff; --pill-on: #2563eb;
+  --accent: #2563eb; --info: #2563eb; --good: #0f9d58; --warn: #d97706; --bad: #dc2626;
+  --terminal: #0f172a; --grid: #2563eb1f;
+  --gauge: linear-gradient(90deg, #0891b2, #2563eb 55%, #6d28d9); /* 라이트는 시안을 한 단계 눌러 흰 글자가 읽힌다 */
+}
+
+@theme inline {
+  --color-*: initial;
+  --color-bg: var(--bg); --color-card: var(--card); --color-card-2: var(--card-2); --color-card-3: var(--card-3);
+  /* 글자색 셋: text(제목) · sub(본문 — CSS 변수는 --body; 유틸 이름이 글자 크기 text-body 와 겹쳐서 sub) · mute(보조). white 는 솔리드 채움 위 글자. */
+  --color-text: var(--text); --color-sub: var(--body); --color-mute: var(--mute); --color-line: var(--line);
+  --color-white: #ffffff; --color-ink: #0b0d12; /* 밝은 솔리드(good·warn) 위 글자 — 흰 글자는 대비 2~3.5 라 안 읽힌다 */
+  --color-on-pill: var(--on-pill); --color-pill-on: var(--pill-on);
+  --color-accent: var(--accent); --color-info: var(--info); --color-good: var(--good); --color-warn: var(--warn); --color-bad: var(--bad);
+  --color-terminal: var(--terminal); --color-popup: var(--popup);
+
+  --font-sans: 'Geist', 'Pretendard', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* 척도 — 15 기본, 17 강조, 22/26 제목, 54 디스플레이 */
+  --text-display: 54px; --text-display--line-height: 1; --text-display--letter-spacing: -1px; --text-display--font-weight: 500;
+  --text-title-lg: 26px; --text-title-lg--line-height: 32px; --text-title-lg--letter-spacing: -0.3px; --text-title-lg--font-weight: 500;
+  --text-title: 22px; --text-title--line-height: 28px; --text-title--letter-spacing: -0.2px; --text-title--font-weight: 500;
+  --text-body-lg: 17px; --text-body-lg--line-height: 24px;
+  --text-body: 15px; --text-body--line-height: 22px;
+  --text-caption: 13px; --text-caption--line-height: 18px;
+  --text-code: 13px; --text-code--line-height: 20px;
+
+  /* 모양 — 동글동글하지도, 딱딱하지도 않게: 카드 16, 타일 10, 컨트롤 10, 버튼 10, 팝업 12 */
+  --radius-card: 16px; --radius-tile: 10px; --radius-control: 10px; --radius-button: 10px; --radius-popup: 12px;
+
+  /* 모션 — 빠르고 조용하게. fast 100(hover 색) · base 160(팝업·모달·토스트·스위치·줌) · slow 240(진행 바·탭 표시). 이징은 ease-out 하나. */
+  --default-transition-duration: 160ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);   /* 페이드·색 */
+  --ease-move: cubic-bezier(0.32, 0.72, 0, 1);  /* 움직임 — 빨리 출발해 길게 안착, 바운스 없음 */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);        /* 퇴장 — 짧고 가속 */
+  --duration-fast: 100ms; --duration-base: 200ms; --duration-slow: 300ms; --duration-exit: 150ms;
+  --animate-fade-in: fade-in var(--duration-base) var(--ease-out);
+  --animate-pop-in: pop-in var(--duration-base) var(--ease-move);
+  --animate-slide-up: slide-up var(--duration-base) var(--ease-move);
+  @keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes pop-in { from { opacity: 0; transform: scale(0.96) } to { opacity: 1; transform: scale(1) } }
+  @keyframes slide-up { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }
+}
+
+html { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; color-scheme: dark; }
+[data-theme="light"] { color-scheme: light; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+/* 움직임을 줄인 사용자에겐 전환·애니메이션을 끈다 */
+/* 모션 원자 — 애니메이션은 전부 여기 이름으로만 쓴다. 상위 컴포넌트는 transition/animate 클래스를 직접 조합하지 않는다.
+   원칙: 등장은 ease-out 160, 퇴장은 더 짧게(120) ease-in. 움직이는 것(핀·손잡이·화살표·패널·드롭다운 scale)은 ease-move — 빨리 출발해 길게 안착. 색·투명도는 ease-out.
+   등장: enter-fade(툴팁·백드롭) · enter-drop(메뉴·셀렉트·콤보박스·팝오버 — 앵커 쪽에서 scale .96 + 4px) · enter-modal(모달, scale .96) · enter-slide(토스트, 8px 위로) · enter-side(시트, 오른쪽에서 16px).
+   전이: move(스위치 손잡이·체크 바탕) · flip-open(트리거·아코디언 화살표) · unfold(아코디언 패널 — enter-drop 과 같은 문법 + 높이) · grow(진행 바·세그먼트 핀·게이지·도넛, slow) · check-in(체크·라디오 표시, 양방향) · focus-in(포커스 링·슬라이더 손잡이) · tint(점·배지·칩 색) · appear(새 줄·패널). 반복: pulse · spin. 테마 전환은 html[data-theme-fade] 로 slow 동안 크로스페이드. */
+@utility enter-fade {
+  transition: opacity var(--duration-base) var(--ease-out);
+  &[data-starting-style] { opacity: 0; }
+  &[data-ending-style] { opacity: 0; transition-duration: var(--duration-exit); transition-timing-function: var(--ease-in); }
+}
+@utility enter-drop {
+  transform-origin: var(--transform-origin, top);
+  transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-move);
+  &[data-starting-style] { opacity: 0; transform: scale(.96) translateY(-4px); }
+  &[data-starting-style][data-side="top"] { transform: scale(.96) translateY(4px); }
+  &[data-ending-style] { opacity: 0; transform: scale(.98); transition-duration: var(--duration-exit); transition-timing-function: var(--ease-in); }
+}
+@utility enter-modal {
+  transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-move);
+  &[data-starting-style] { opacity: 0; transform: scale(.96); }
+  &[data-ending-style] { opacity: 0; transform: scale(.98); transition-duration: var(--duration-exit); transition-timing-function: var(--ease-in); }
+}
+@utility enter-side {
+  transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-move);
+  &[data-starting-style] { opacity: 0; transform: translateX(16px); }
+  &[data-ending-style] { opacity: 0; transform: translateX(8px); transition-duration: var(--duration-exit); transition-timing-function: var(--ease-in); }
+}
+@utility enter-slide {
+  transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-move);
+  &[data-starting-style] { opacity: 0; transform: translateY(8px); }
+  &[data-ending-style] { opacity: 0; transform: translateY(4px); transition-duration: var(--duration-exit); transition-timing-function: var(--ease-in); }
+}
+@utility move { transition: transform var(--duration-base) var(--ease-move), translate var(--duration-base) var(--ease-move), background-color var(--duration-base) var(--ease-out); }
+/* unfold — enter-drop 과 같은 문법: 앵커(트리거) 쪽에서 4px + 투명도, 여기에 높이만 더한다. 등장 200 ease-move, 퇴장 150 ease-in. */
+@utility unfold {
+  height: var(--accordion-panel-height); overflow: hidden;
+  transition: height var(--duration-base) var(--ease-move), opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-move);
+  &[data-starting-style] { height: 0; opacity: 0; transform: translateY(-4px); }
+  &[data-ending-style] { height: 0; opacity: 0; transform: translateY(-4px); transition-duration: var(--duration-exit); transition-timing-function: var(--ease-in); }
+}
+@utility grow { transition-property: width, height, left, grid-template-columns, stroke-dasharray, background-color; transition-duration: var(--duration-slow); transition-timing-function: var(--ease-move); }
+/* focus-in — 포커스 링은 outline 으로 그린다(box-shadow 가 아니라서 어떤 바탕 위에서도 2px 틈이 진짜로 비친다 — accent 버튼 위에서도 보인다).
+   링은 offset 2px 에 고정해 두고 **색 하나만** base·ease-out 으로 전이한다. offset 을 같이 움직이면 정수 픽셀로 한 칸씩 뛰어서 색이 다 찬 뒤 한 번 더 툭 밀리는 것처럼 보인다(2026-09-08 사용자 지적). 입력은 :focus, 나머지는 :focus-visible. */
+@utility focus-in {
+  outline: 2px solid transparent; outline-offset: 2px;
+  transition: outline-color var(--duration-base) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out), transform var(--duration-base) var(--ease-move);
+  &:focus-visible { outline-color: var(--accent); }
+  &[aria-invalid="true"] { outline-color: var(--bad); }
+}
+/* tint — 상태 색이 바뀌는 정적 요소(점·배지·칩·타일·텍스트 톤). 색만, base·ease-out. */
+@utility tint { transition: background-color var(--duration-base) var(--ease-out), color var(--duration-base) var(--ease-out), opacity var(--duration-base) var(--ease-out); }
+/* flip-open — 팝업을 여는 트리거 안의 화살표. 트리거(data-popup-open / aria-expanded)가 열리면 180°. */
+@utility flip-open { transition: transform var(--duration-base) var(--ease-move); :where([data-popup-open], [aria-expanded="true"], [data-panel-open]) & { transform: rotate(180deg); } }
+/* appear — 새로 생긴 것(로그 줄·탭 패널·스피너)이 페이드로 들어온다. */
+@utility appear { animation: fade-in var(--duration-base) var(--ease-out); }
+/* 테마 전환 — 토글 직후 slow 동안만 색이 크로스페이드(html[data-theme-fade]). */
+[data-theme-fade], [data-theme-fade] * { transition: background-color var(--duration-slow) var(--ease-out), color var(--duration-slow) var(--ease-out), fill var(--duration-slow) var(--ease-out), stroke var(--duration-slow) var(--ease-out), box-shadow var(--duration-slow) var(--ease-out), outline-color var(--duration-slow) var(--ease-out) !important; }
+@utility check-in {
+  transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-move);
+  &[data-unchecked] { opacity: 0; transform: scale(.5); transition-duration: var(--duration-exit); transition-timing-function: var(--ease-in); }
+}
+/* 세그먼트 칸 — pressable 과 같되 글자색은 핀이 도착하는 동안(slow·ease-move) 같이 바뀐다. */
+@utility segment {
+  cursor: pointer; outline: none;
+  transition: color var(--duration-slow) var(--ease-move), background-color var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+  &:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+  &:disabled, &[data-disabled] { opacity: .4; cursor: not-allowed; }
+  &:active:not(:disabled):not([data-disabled]) { transform: scale(.97); transition-duration: 0ms; }
+}
+
+/* surface-2 — card-2 바탕 위에 놓인 영역(팝업·열린 아코디언 항목). 안쪽의 card-2/card-3 유틸이 한 단계씩 올라가(c3/c4) 입력·hover 가 바탕에 묻히지 않는다. */
+@utility surface-2 { --card-2: var(--c3); --card-3: var(--c4); } /* 자기 바탕은 bg-[var(--c2)] 로 — 같은 요소의 bg-card-2 도 올라가 버린다 */
+
+/* 인터랙션 — 레시피 셋. pressable = 버튼·세그먼트·스위치·체크(hover 색 한 단계 100 · press 즉시 .97) / interactive = 행·항목·링크·트리거(hover card-3 100 in · 200 out · press 한 단계 더 깊게, 크기 안 움직임) / focus-in = 입력·손잡이.
+   focus 는 셋 다 같다 — offset 2px 에 고정된 outline 의 색 하나만 base 로 들어온다(offset 을 같이 움직이면 픽셀 스텝으로 끊긴다). disabled 는 40% + not-allowed. 커서: 누를 수 있으면 pointer, 글자면 text, 끌면 grab, 막히면 not-allowed. */
+@utility interactive {
+  /* 행·항목·링크·트리거 — hover/highlight 는 card-3 로 fast(100) 에 들어오고 base(200) 로 빠진다(포인터가 목록을 훑을 때 꼬리가 남지 않고 부드럽다). press 는 즉시 한 단계 더 깊게. 크기·위치는 움직이지 않는다. */
+  cursor: pointer; outline: 2px solid transparent; outline-offset: 2px;
+  transition: background-color var(--duration-base) var(--ease-out), color var(--duration-base) var(--ease-out), opacity var(--duration-base) var(--ease-out), outline-color var(--duration-base) var(--ease-out);
+  &:hover, &[data-highlighted] { background-color: var(--card-3); transition-duration: var(--duration-fast); }
+  &:active:not(:disabled):not([data-disabled]) { background-color: color-mix(in oklab, var(--card-3) 86%, var(--text)); transition-duration: 0ms; }
+  &:focus-visible { outline-color: var(--accent); }
+  &:disabled, &[data-disabled], &[aria-disabled="true"] { opacity: .4; cursor: not-allowed; background-color: transparent; }
+}
+@utility pressable {
+  cursor: pointer; outline: 2px solid transparent; outline-offset: 2px;
+  transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out), outline-color var(--duration-base) var(--ease-out);
+  &:focus-visible { outline-color: var(--accent); }
+  &:disabled, &[data-disabled], &[aria-disabled="true"] { opacity: .4; cursor: not-allowed; }
+  &:active:not(:disabled):not([data-disabled]) { transform: scale(.97); transition-duration: 0ms; }
+}
+/* 세그먼트 칸 — pressable 과 같되 글자색은 핀이 도착하는 동안(slow·ease-move) 같이 바뀐다. */
+@utility segment {
+  cursor: pointer; outline: 2px solid transparent; outline-offset: 2px;
+  transition: color var(--duration-slow) var(--ease-move), background-color var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out), outline-color var(--duration-base) var(--ease-out);
+  &:focus-visible { outline-color: var(--accent); }
+  &:disabled, &[data-disabled] { opacity: .4; cursor: not-allowed; }
+  &:active:not(:disabled):not([data-disabled]) { transform: scale(.97); transition-duration: 0ms; }
+}
+@media (prefers-reduced-motion: reduce) { .pressable:active, .segment:active { transform: none !important; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; } }
