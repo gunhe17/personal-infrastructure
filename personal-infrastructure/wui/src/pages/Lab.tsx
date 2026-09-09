@@ -110,10 +110,10 @@ const hostOf = (H: Metrics["h"], id: "cpu" | "mem") => ({
 /** 띠 크기 규격 — 제목 줄(제목 + 바로 오른쪽 토글) → 그래프(우측 끝에 현재값) 를 왼쪽에, 가로 쌓은 띠 + 상위 3 을 오른쪽에(사용자 지정 2026-09-09). 2열은 창 1024 이상에서만(사용자 결정 2026-09-09: 전환점은 창 기준으로 통일). */
 type Size = { pad: string; gap: string; cols: string; chart: number; now: number; name: string; value: string; row: string; dot: string; rows: string };
 const SIZES = {
-  base:  { pad: "p-5 sm:p-6", gap: "lg:gap-x-8",  cols: "lg:grid-cols-[1fr_280px]", chart: 64, now: 104, name: "text-body",    value: "text-body-lg font-medium",  row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
-  tight: { pad: "p-4 sm:p-5", gap: "lg:gap-x-6",  cols: "lg:grid-cols-[1fr_240px]", chart: 48, now: 92,  name: "text-caption", value: "text-body font-medium",     row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0" },
-  roomy: { pad: "p-6 sm:p-7", gap: "lg:gap-x-10", cols: "lg:grid-cols-[1fr_320px]", chart: 88, now: 120, name: "text-body",    value: "text-title",                row: "text-caption",          dot: "size-2",   rows: "space-y-1" },
-  chart: { pad: "p-5 sm:p-6", gap: "lg:gap-x-6",  cols: "lg:grid-cols-[1fr_216px]", chart: 80, now: 104, name: "text-caption", value: "text-body-lg font-medium",  row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
+  base:  { pad: "p-5 sm:p-6", gap: "lg:gap-x-8",  cols: "lg:grid-cols-[1fr_280px]", chart: 64, now: 88,  name: "text-body",    value: "text-body font-medium",     row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
+  tight: { pad: "p-4 sm:p-5", gap: "lg:gap-x-6",  cols: "lg:grid-cols-[1fr_240px]", chart: 48, now: 80,  name: "text-caption", value: "text-caption font-medium", row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0" },
+  roomy: { pad: "p-6 sm:p-7", gap: "lg:gap-x-10", cols: "lg:grid-cols-[1fr_320px]", chart: 88, now: 104, name: "text-body",    value: "text-body-lg font-medium", row: "text-caption",          dot: "size-2",   rows: "space-y-1" },
+  chart: { pad: "p-5 sm:p-6", gap: "lg:gap-x-6",  cols: "lg:grid-cols-[1fr_216px]", chart: 80, now: 88,  name: "text-caption", value: "text-body font-medium",     row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
 } satisfies Record<string, Size>;
 type SizeId = keyof typeof SIZES;
 const DirCtx = createContext<{ dir: Dir; setDir: (d: Dir) => void; marks: boolean }>({ dir: "sum", setDir: () => {}, marks: true });
