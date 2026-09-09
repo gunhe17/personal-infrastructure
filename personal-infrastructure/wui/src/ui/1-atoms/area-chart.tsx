@@ -42,8 +42,8 @@ export function AreaChart({ series, max, height = 160, format = (v) => String(v)
   );
   // 눈금 — 고정폭 열. 절대 배치로 두면 라벨 길이(100% vs 2000G)만큼 그래프 시작점이 어긋난다.
   const axis = !annotate && (
-    <div className="pointer-events-none flex shrink-0 flex-col justify-between text-end font-mono text-[11px] leading-4 tabular-nums text-mute" style={{ height, width: axisWidth }}>
-      {ticks.map((t) => <span key={t} className="-translate-y-1/2 first:translate-y-0 last:-translate-y-full">{format(Math.round(top * t))}</span>)}
+    <div className="pointer-events-none relative shrink-0 font-mono text-[11px] leading-4 tabular-nums text-mute" style={{ height, width: axisWidth }}>
+      {ticks.map((t) => <span key={t} className="absolute end-0 -translate-y-1/2" style={{ top: y(top * t) }}>{format(Math.round(top * t))}</span>)}
     </div>
   );
   // 현재값 — 그래프 오른쪽, 마지막 점 높이에 맞춘 자리(사용자 지정 2026-09-09).
