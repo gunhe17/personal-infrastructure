@@ -218,6 +218,9 @@ const ITEMS: Item[] = [
   { id: "x-analytics", label: "Analytics / 홈", frame: true, render: () => <Analytics /> },
 ];
 const BY_ID = Object.fromEntries(ITEMS.map((it) => [it.id, it]));
+// 묶음 이름·순서는 컴포넌트 라이브러리들의 공통 어휘를 따른다(MUI·Ant Design·Chakra·Polaris 가 쓰는 역할 분류):
+// 동작 → 입력 → 표시 → 피드백 → 내비게이션 → 오버레이 → 표면. 층(0~4)이 세로 축, 역할이 가로 축이라
+// "어느 층의 무슨 역할" 로 한 번에 찾힌다. 묶음 안은 컴포넌트 이름 알파벳 순, 같은 컴포넌트의 변형은 붙여 둔다.
 const SECTIONS: RowDef[] = [
   { title: "0 토큰", cells: [
     { title: "색 · 모양", items: ["color", "gauge-token", "type", "shape", "spacing"] },
@@ -225,24 +228,25 @@ const SECTIONS: RowDef[] = [
     { title: "모션 · 커서", items: ["motion", "cursor"] },
   ] },
   { title: "1 원자", cells: [
-    { title: "컨트롤", items: ["button", "button-sm", "link", "spinner", "input-dense", "input-disabled", "textarea", "switch", "switch-hint", "radio", "slider", "progress"] },
-    { title: "표시", items: ["dot-atom", "badge", "tile", "avatar", "avatar-status", "kbd", "code", "inline-code", "skeleton"] },
-    { title: "바탕", items: ["container", "separator", "track", "card", "card-footer", "callout"] },
-    { title: "차트", items: ["sparkline", "donut", "gauge"] },
-    { title: "팝업", items: ["tooltip"] },
+    { title: "동작", items: ["button", "button-sm", "link"] },
+    { title: "입력", items: ["input-dense", "input-disabled", "radio", "slider", "switch", "switch-hint", "textarea"] },
+    { title: "표시", items: ["avatar", "avatar-status", "badge", "code", "donut", "dot-atom", "gauge", "inline-code", "kbd", "sparkline", "tile"] },
+    { title: "피드백", items: ["progress", "skeleton", "spinner"] },
+    { title: "오버레이", items: ["tooltip"] },
+    { title: "표면", items: ["callout", "card", "card-footer", "container", "separator", "track"] },
   ] },
   { title: "2 분자", cells: [
-    { title: "컨트롤", items: ["icon-button", "button-group", "icon-text", "search", "input", "input-error", "input-group", "copy-field", "checkbox", "checkbox-hint", "radio-cards", "select", "select-dense", "number", "combobox"] },
-    { title: "폼", items: ["fieldset", "form-row", "action-panel"] },
-    { title: "세그먼트 · 내비", items: ["filter", "tabs", "toggle", "chip", "toolbar", "breadcrumb", "pagination", "nav-list"] },
-    { title: "머리 · 목록", items: ["section-heading", "list", "calendar"] },
-    { title: "표시", items: ["dot", "notice", "notice-action", "avatar-group", "dots", "tracker", "meter", "steps", "timeline", "timeline-lead", "key-value", "listrow", "listrow-end", "stat", "stat-trend"] },
-    { title: "팝업", items: ["menu", "popover", "dialog", "confirm", "sheet", "command", "accordion", "toast"] },
-    { title: "표면", items: ["empty", "log"] },
+    { title: "동작", items: ["button-group", "chip", "icon-button"] },
+    { title: "입력", items: ["calendar", "checkbox", "checkbox-hint", "combobox", "copy-field", "fieldset", "form-row", "input", "input-error", "input-group", "number", "radio-cards", "search", "select", "select-dense"] },
+    { title: "표시", items: ["accordion", "avatar-group", "dot", "dots", "icon-text", "key-value", "list", "listrow", "listrow-end", "meter", "stat", "stat-trend", "steps", "timeline", "timeline-lead", "tracker"] },
+    { title: "피드백", items: ["empty", "log", "notice", "notice-action", "toast"] },
+    { title: "내비게이션", items: ["breadcrumb", "filter", "nav-list", "pagination", "tabs", "toggle", "toolbar"] },
+    { title: "오버레이", items: ["command", "confirm", "dialog", "menu", "popover", "sheet"] },
+    { title: "표면", items: ["action-panel", "section-heading"] },
   ] },
   { title: "3 유기체", cells: [
-    { title: "셸", items: ["topbar", "page-heading", "sign-in"] },
-    { title: "카드", items: ["o-top", "o-edge", "o-deploys"] },
+    { title: "셸", items: ["page-heading", "sign-in", "topbar"] },
+    { title: "카드", items: ["o-deploys", "o-edge", "o-top"] },
     { title: "리소스", items: ["o-band", "o-bands", "o-devices"] },
   ] },
   { title: "4 템플릿", cells: [
@@ -331,11 +335,21 @@ export function Canvas() {
           <div ref={content} className="grid items-start gap-x-10 p-12" style={{ gridTemplateColumns: "120px 960px" }}>
             {SECTIONS.map((row, si) => (
               <div key={row.title} className={`col-span-2 grid items-start gap-x-10 ${si > 0 ? "mt-24 border-t border-line pt-12" : ""}`} style={{ gridTemplateColumns: "subgrid" }}>
-                <p className="sticky top-0 py-1 font-mono text-caption uppercase tracking-wide text-mute">{row.title}</p>
+                {/* 왼쪽 목차 — 층 이름 + 그 층의 역할 묶음. 어느 층의 무슨 역할인지 한 눈에 보이고 눌러서 건너뛴다. */}
+                <div className="sticky top-0 py-1">
+                  <p className="font-mono text-caption uppercase tracking-wide text-text">{row.title}</p>
+                  <nav className="mt-3 space-y-1">
+                    {row.cells.map((cell, ci) => (
+                      <a key={cell.title} href={`#g-${si}-${ci}`} className="-mx-2 flex items-baseline justify-between gap-2 rounded-[6px] px-2 py-1 font-mono text-[11px] leading-4 text-mute interactive">
+                        <span className="truncate">{cell.title}</span><span className="tabular-nums opacity-60">{cell.items.length}</span>
+                      </a>
+                    ))}
+                  </nav>
+                </div>
                 <div>
                   {row.cells.map((cell, ci) => (
-                    <div key={cell.title} className={ci > 0 ? "mt-20" : ""}>
-                      <p className="mb-6 font-mono text-caption text-text">{cell.title}<span className="ms-2 text-mute">{cell.items.length}</span></p>
+                    <div key={cell.title} id={`g-${si}-${ci}`} className={`scroll-mt-12 ${ci > 0 ? "mt-20" : ""}`}>
+                      <p className="mb-6 flex items-center gap-3 font-mono text-caption text-text">{cell.title}<span className="text-mute">{cell.items.length}</span><span className="h-px flex-1 bg-line" /></p>
                       {cell.items.map((id, i, ids) => {
                         const it = BY_ID[id];
                         const prev = i > 0 ? BY_ID[ids[i - 1]] : null;
