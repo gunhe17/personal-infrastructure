@@ -86,7 +86,7 @@ Geist(본문·숫자) · Geist Mono(기술 값) · Pretendard 한글 폴백. 굵
 ### 모양 · 간격
 
 - radius: `card 16` · `tile 10` · `control 10`(입력·메뉴 항목) · `button 10`(버튼·세그먼트·검색·칩·툴팁) · `popup 12`(메뉴·팝오버·토스트) · 배지 8 · kbd 6. 원형(`full`)은 아바타·스위치·점·도넛·페이지 번호만.
-- 높이: 버튼 40(sm 32, icon 48 원형) · 입력 44(dense 36) · 검색 40 · 배지 36 · 표 행 72(dense 56) · 세그먼트 40 안에 pill 트랙 p-1.
+- 높이: 버튼 40(sm 32, icon 48 원형) · 입력 44(dense 36) · 검색 40 · 배지 36 · 표 행 72(dense 56) · 세그먼트 트랙 40(칸 32 + p-1) — 버튼과 같은 높이. 카드 안 로컬 토글은 SEG_SM 트랙 24(칸 16).
 - **데이터 행의 치수(2026-09-09 확정, `ResourceBand`·`DeviceList` 기준)**: 카드 안 소제목 줄 **28**(`h-7`) · 그 줄 옆 작은 세그먼트 **24**(SEG_SM) · 띠 그래프 **64** · 목록 스파크라인 **32** · 막대(Progress·쌓은 띠) **8** · 순위 점 **6** · 눈금 열 **36** · 현재값 열 **88** · 이름 열 **112–180** · 오른쪽 목록 열 **160–280**. 그래프·값 열은 **고정폭**이라 여러 행의 그래프 양 끝이 같은 x 에 선다.
 - 간격은 아래 "간격 — 역할별 척도" 를 따른다. 페이지 여백 20–24.
 - 그림자 없음. 팝업·모달만 `ring-1 ring-line`. 모달 배경은 `bg/70` + blur.
@@ -123,7 +123,7 @@ Geist(본문·숫자) · Geist Mono(기술 값) · Pretendard 한글 폴백. 굵
 - **Input / Textarea / Field / SearchInput** — card-2, 12px, 테두리 없음, focus accent 링, 오류는 bad 링 + caption. 검색은 pill.
 - **Select** — 입력과 같은 모양, 팝업은 메뉴와 같은 16px card-2 + line 링, 체크는 accent.
 - **Switch** — 44×24, 손잡이 accent. `boxed` 면 card-2 pill 안에 라벨과 함께(원본 "Insights").
-- **Tabs / FilterTabs / ToggleGroup** — `SlideTrack`(card-2 트랙 + 활성 칸을 따라 미끄러지는 accent 핀) 위의 SEG. 활성은 `aria-pressed`/`aria-selected`/`data-pressed`/`data-active`(Base Tabs)/`data-selected` 로 찾는다. Tabs 의 선택 글자색도 `data-[active]` — `data-selected` 로 두면 mute 글자가 accent 위에 남는다(2026-09-08 사용자 지적). 밑줄 탭은 없다. **FilterTabs `size="sm"`**(2026-09-09) 은 `SEG_SM` — 트랙 안 16, 바깥 24, 11/16, 칸은 `flex-1` 같은 폭. 제목 옆에 붙는 로컬 토글용이라 제목보다 작다. 카드 안 값 옆의 합·읽기·쓰기 같은 로컬 토글에.
+- **Tabs / FilterTabs / ToggleGroup** — 트랙 40(칸 32, 2026-09-09 리소스 기준으로 48 → 40) 의 `SlideTrack`(card-2 트랙 + 활성 칸을 따라 미끄러지는 accent 핀) 위의 SEG. 활성은 `aria-pressed`/`aria-selected`/`data-pressed`/`data-active`(Base Tabs)/`data-selected` 로 찾는다. Tabs 의 선택 글자색도 `data-[active]` — `data-selected` 로 두면 mute 글자가 accent 위에 남는다(2026-09-08 사용자 지적). 밑줄 탭은 없다. **FilterTabs `size="sm"`**(2026-09-09) 은 `SEG_SM` — 트랙 안 16, 바깥 24, 11/16, 칸은 `flex-1` 같은 폭. 제목 옆에 붙는 로컬 토글용이라 제목보다 작다. 카드 안 값 옆의 합·읽기·쓰기 같은 로컬 토글에.
 - **Dot / StatusDot / Badge / Tile** — 점 8px(progress 맥동), StatusDot = Dot + body; 배지 md 36 · sm 32(caption) 8px 솔리드(idle 만 card-3); 타일은 **단색(accent)** md 48/10px · sm 36/8px, 흰 이니셜 또는 아이콘.
 - **Card** — 16px card, 안쪽 24(좁으면 20). **여백은 `pad` prop 으로 바꾼다** — `className="p-0"` 은 안 먹는다(2026-09-09): `cn` 은 단순 이어붙이기라 기본값의 `sm:p-6` 이 미디어 쿼리 안에 있어 뒤에 온 `p-0` 을 이긴다. 목록 컨테이너는 `pad="p-0"`, TopBar 는 `pad="px-4 py-0 sm:px-6"`, 제목 22(아이콘 있으면 26) + 부제 mute, 우측 액션. 모든 표면(Stat·StatTrend·Accordion·LogViewer·Dialog·TopBar)이 이걸 쓴다. `flush` 없음.
 - **Stat** — card 안 caption → 54px display → note + delta(info).
