@@ -1,4 +1,4 @@
-import { AreaChart, AppShell, Card, cn, Container, Dot, Switch, IconText, KeyValue, ListRow, PageHeading, Progress, SectionHeading, Tile } from "@/ui";
+import { Accordion, AreaChart, AppShell, Card, cn, Container, Dot, FilterTabs, Meter, Sheet, Sparkline, Switch, IconText, KeyValue, ListRow, PageHeading, Progress, SectionHeading, Tile } from "@/ui";
 import { useEffect, useRef, useState } from "react";
 
 // Lab — 결정 전 후보를 실제 크기로 나란히 본다. 여기 있는 것은 아직 키트가 아니다. 선택되면 유기체/템플릿으로 옮긴다.
@@ -46,6 +46,7 @@ function Option({ id, title, from, fit, children }: { id: string; title: string;
 }
 
 type Res = "cpu" | "mem" | "disk" | "net";
+const fmtGB = (v: number) => v >= 1024 ? `${(v / 1024).toFixed(2)} TB` : v >= 1 ? `${v.toFixed(1)} GB` : `${Math.round(v * 1024)} MB`;
 // ── 한눈에 보기 — 네 리소스가 동시에 보이는 경우의 수 ─────────────────────────
 const RES: { id: Res; label: string; unit: (c: Ct) => string; pct: (c: Ct) => number; tone: (c: Ct) => "accent" | "good" | "warn" | "bad" }[] = [
   { id: "cpu", label: "CPU", unit: (c) => `${Math.round(c.cpu)}%`, pct: (c) => c.cpu, tone: (c) => (c.cpu > 30 ? "warn" : "accent") },
@@ -61,61 +62,83 @@ const hostOf = (H: Metrics["h"], id: Res) => ({
 }[id]);
 const topOf = (CT: Ct[], r: (typeof RES)[number], n = 3) => [...CT].sort((a, b) => r.pct(b) - r.pct(a)).slice(0, n);
 
-/** V1 — 2×2 사분면. 리소스 하나가 칸 하나: 값 · 시계열 · 상위 3. */
-function V1({ m }: { m: Metrics }) {
+/** 리소스 띠 — 요약 한 줄: 이름·값 · 시계열 · 상위 3. 네 변형이 같은 띠를 쓴다. */
+function Band({ m, r, dense }: { m: Metrics; r: (typeof RES)[number]; dense?: boolean }) {
+  const h = hostOf(m.h, r.id);
   return (
-    <div className="grid grid-cols-2 gap-5">
-      {RES.map((r) => { const h = hostOf(m.h, r.id); return (
-        <Card key={r.id} title={r.label} subtitle={h.sub} actions={<span className="text-title tabular-nums text-text">{h.value}</span>}>
-          <div className="ps-8"><AreaChart series={h.series} max={h.max} height={96} format={h.fmt} /></div>
-          <div className="mt-4 space-y-2">{topOf(m.ct, r).map((c) => <div key={c.name} className="grid grid-cols-[96px_1fr_88px] items-center gap-3"><span className="truncate text-body text-text">{c.name}</span><Progress value={r.pct(c)} tone={r.tone(c)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{r.unit(c)}</span></div>)}</div>
-        </Card>); })}
+    <div className={cn("grid items-center gap-8", dense ? "grid-cols-[140px_1fr_240px]" : "grid-cols-[160px_1fr_260px]")}>
+      <div><p className="text-body text-mute">{r.label}</p><p className="mt-1 text-title tabular-nums text-text">{h.value}</p><p className="text-caption text-mute">{h.sub}</p></div>
+      <div className="ps-8"><AreaChart series={h.series} max={h.max} height={64} format={h.fmt} /></div>
+      <div className="space-y-1.5">{topOf(m.ct, r).map((c) => <div key={c.name} className="grid grid-cols-[80px_1fr_80px] items-center gap-2"><span className="truncate text-caption text-text">{c.name}</span><Progress value={r.pct(c)} tone={r.tone(c)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{r.unit(c)}</span></div>)}</div>
     </div>
   );
 }
 
-/** V2 — 가로 띠 4단. 활성 상태 보기의 아래 패널을 리소스마다 한 줄씩: 합계 · 시계열 · 상위 3. */
-function V2({ m }: { m: Metrics }) {
+/** 리소스 세부 — 띠를 펼치면 나오는 것. 큰 시계열(범위) · 리소스마다 다른 분해 · 컨테이너 전체. */
+function Detail({ m, r }: { m: Metrics; r: (typeof RES)[number] }) {
+  const h = hostOf(m.h, r.id);
+  const [range, setRange] = useState("24h");
+  const X = range === "1h" ? ["-60m", "-45m", "-30m", "-15m", "지금"] : range === "7d" ? ["월", "화", "수", "목", "금", "토", "일"] : ["00", "03", "06", "09", "12", "15", "18", "21", "24"];
+  const rows = [...m.ct].sort((a, b) => r.pct(b) - r.pct(a));
+  const cores = Array.from({ length: 8 }, (_, i) => Math.max(2, Math.min(100, Math.round(last(m.h.cpu) + (i % 3 - 1) * 9 + ((i * 7) % 5) * 2))));
+  const breakdown: Record<Res, React.ReactNode> = {
+    cpu: <div className="grid grid-cols-2 gap-6"><div><p className="mb-3 text-caption text-mute">코어별</p><div className="grid grid-cols-4 gap-x-4 gap-y-3">{cores.map((v, i) => <Progress key={i} label={`#${i}`} value={v} tone={v > 80 ? "bad" : v > 50 ? "warn" : "accent"} />)}</div></div><KeyValue className="grid-cols-[96px_1fr]" items={[{ label: "부하 1·5·15", value: `${(last(m.h.cpu) / 12).toFixed(1)} · 1.6 · 1.4`, mono: true }, { label: "온도", value: "52°C", mono: true }, { label: "스로틀", value: "없음" }, { label: "재시작 24h", value: "3", mono: true }]} /></div>,
+    mem: <div className="grid grid-cols-2 gap-6"><Meter label="컨테이너별" total={16} unit="G" parts={m.ct.map((c, i) => ({ label: c.name, value: Math.round(c.mem * 10) / 10, tone: (["info", "idle", "progress", "running", "idle"] as const)[i] }))} /><KeyValue className="grid-cols-[96px_1fr]" items={[{ label: "사용", value: `${last(m.h.mem).toFixed(1)} GB`, mono: true }, { label: "캐시", value: "2.4 GB", mono: true }, { label: "스왑", value: "0 B", mono: true }, { label: "상한 근접", value: m.ct.filter((c) => c.mem / c.memLimit > 0.9).map((c) => c.name).join(", ") || "없음" }]} /></div>,
+    disk: <div className="grid grid-cols-2 gap-6"><Meter label="512 GB" total={512} unit="G" parts={[{ label: "이미지", value: 84, tone: "info" }, { label: "볼륨", value: Math.round(last(m.h.disk) - 84 - 32), tone: "running" }, { label: "백업", value: 32, tone: "progress" }]} /><div><p className="mb-3 text-caption text-mute">볼륨</p><div className="space-y-2">{[...m.ct].sort((a, b) => b.vol - a.vol).slice(0, 4).map((c) => <div key={c.name} className="grid grid-cols-[96px_1fr_72px] items-center gap-3"><span className="truncate text-body text-text">{c.name}</span><Progress value={(c.vol / 96) * 100} tone="accent" className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{fmtGB(c.vol)}</span></div>)}</div></div></div>,
+    net: <div className="grid grid-cols-2 gap-6"><KeyValue className="grid-cols-[96px_1fr]" items={[{ label: "en0", value: `↓${Math.round(last(m.h.net_in))} ↑${Math.round(last(m.h.net_out))} Mb/s`, mono: true }, { label: "docker0", value: "↓4 ↑4 Mb/s", mono: true }, { label: "열린 연결", value: "124", mono: true }, { label: "엣지 요청/초", value: "38", mono: true }]} /><KeyValue className="grid-cols-[96px_1fr]" items={[{ label: "받은 데이터", value: fmtGB(m.ct.reduce((a, c) => a + c.rx, 0)), mono: true }, { label: "보낸 데이터", value: fmtGB(m.ct.reduce((a, c) => a + c.tx, 0)), mono: true }, { label: "터널", value: "cloudflared up" }, { label: "공인 IP", value: "203.0.113.7", mono: true }]} /></div>,
+  };
+  const cols: Record<Res, (c: Ct) => React.ReactNode[]> = {
+    cpu: (c) => [<span className="font-mono tabular-nums text-text">{Math.round(c.cpu)}%</span>, <Sparkline fluid points={c.spark} tone={r.tone(c)} height={24} className="block w-full" />, <IconText icon="clock">{c.uptime}</IconText>],
+    mem: (c) => [<span className="font-mono tabular-nums text-text">{c.mem.toFixed(1)} / {c.memLimit} GB</span>, <Progress value={(c.mem / c.memLimit) * 100} tone={r.tone(c)} className="[&>div:first-child]:hidden" />, <IconText icon="clock">{c.uptime}</IconText>],
+    disk: (c) => [<span className="font-mono tabular-nums text-text">{fmtGB(c.wr)} 씀</span>, <span className="font-mono tabular-nums text-text">{fmtGB(c.rd)} 읽음</span>, <span className="font-mono tabular-nums text-mute">{(c.wrRate + c.rdRate).toFixed(1)} MB/s</span>],
+    net: (c) => [<span className="font-mono tabular-nums text-text">{fmtGB(c.rx)} 받음</span>, <span className="font-mono tabular-nums text-text">{fmtGB(c.tx)} 보냄</span>, <span className="font-mono tabular-nums text-mute">{(c.rxRate + c.txRate).toFixed(1)} Mb/s</span>],
+  };
   return (
-    <Card className="divide-y divide-line p-0 [&>*]:px-6 [&>*]:py-5">
-      {RES.map((r) => { const h = hostOf(m.h, r.id); return (
-        <div key={r.id} className="grid grid-cols-[160px_1fr_260px] items-center gap-8">
-          <div><p className="text-body text-mute">{r.label}</p><p className="mt-1 text-title tabular-nums text-text">{h.value}</p><p className="text-caption text-mute">{h.sub}</p></div>
-          <div className="ps-8"><AreaChart series={h.series} max={h.max} height={64} format={h.fmt} /></div>
-          <div className="space-y-1.5">{topOf(m.ct, r).map((c) => <div key={c.name} className="grid grid-cols-[80px_1fr_80px] items-center gap-2"><span className="truncate text-caption text-text">{c.name}</span><Progress value={r.pct(c)} tone={r.tone(c)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{r.unit(c)}</span></div>)}</div>
-        </div>); })}
-    </Card>
-  );
-}
-
-/** V3 — 매트릭스 + 시계열 스택. 왼쪽은 컨테이너 × 리소스 표(칸마다 막대), 오른쪽은 리소스 넷의 시계열. */
-function V3({ m }: { m: Metrics }) {
-  const [sort, setSort] = useState<Res>("cpu");
-  const r0 = RES.find((r) => r.id === sort)!;
-  const rows = [...m.ct].sort((a, b) => r0.pct(b) - r0.pct(a));
-  return (
-    <div className="grid grid-cols-[1fr_320px] gap-5">
-      <Card className="p-0">
-        <div className="grid grid-cols-[180px_repeat(4,1fr)] items-center gap-4 border-b border-line px-6 py-3 text-caption text-mute"><span>컨테이너</span>{RES.map((r) => <button key={r.id} type="button" onClick={() => setSort(r.id)} className={cn("-mx-2 rounded-[6px] px-2 py-1 text-start interactive", sort === r.id && "text-text")}>{r.label}{sort === r.id && " ↓"}</button>)}</div>
-        <div className="divide-y divide-line px-6">{rows.map((c) => <div key={c.name} className="grid grid-cols-[180px_repeat(4,1fr)] items-center gap-4 py-3"><ListRow lead={<Tile size="sm">{c.name[0].toUpperCase()}</Tile>} title={c.name} sub={c.stack} />{RES.map((r) => <div key={r.id}><div className="flex items-baseline justify-between"><span className="font-mono text-body tabular-nums text-text">{r.unit(c)}</span></div><Progress value={r.pct(c)} tone={r.tone(c)} className="mt-1 [&>div:first-child]:hidden" /></div>)}</div>)}</div>
-      </Card>
-      <div className="flex flex-col gap-5">{RES.map((r) => { const h = hostOf(m.h, r.id); return <Card key={r.id} className="p-4"><div className="flex items-baseline justify-between"><span className="text-body text-mute">{r.label}</span><span className="font-mono text-body tabular-nums text-text">{h.value}</span></div><div className="mt-2 ps-8"><AreaChart series={h.series} max={h.max} height={48} format={h.fmt} /></div></Card>; })}</div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between"><span className="text-body text-mute">{r.label} 시계열</span><FilterTabs value={range} onValueChange={setRange} items={[{ value: "1h", label: "1시간" }, { value: "24h", label: "24시간" }, { value: "7d", label: "7일" }]} /></div>
+      <div className="ps-8"><AreaChart series={h.series} max={h.max} height={140} format={h.fmt} xLabels={X} /></div>
+      {breakdown[r.id]}
+      <div><p className="mb-3 text-caption text-mute">컨테이너 전체 · {r.label} 순</p><div className="divide-y divide-line">{rows.map((c) => <div key={c.name} className="grid grid-cols-[200px_1fr_1fr_140px] items-center gap-4 py-2 text-body [&>*:not(:first-child)]:justify-self-end"><ListRow lead={<Tile size="sm">{c.name[0].toUpperCase()}</Tile>} title={c.name} sub={c.stack} />{cols[r.id](c).map((x, i) => <div key={i} className="w-full text-end">{x}</div>)}</div>)}</div></div>
     </div>
   );
 }
 
-/** V4 — 시계열 4장 위, 아래는 컨테이너 × 리소스 히트맵(칸 색이 곧 사용량). 가장 압축된 한눈. */
-function V4({ m }: { m: Metrics }) {
-  const heat = (p: number) => p > 80 ? "bg-bad text-white" : p > 50 ? "bg-warn text-ink" : p > 20 ? "bg-accent text-white" : "bg-card-2 text-text";
+/** V2-a — 행 펼침. 띠를 누르면 그 자리에서 세부가 펼쳐진다(unfold). 한 번에 여러 개 열 수 있다. */
+function V2a({ m }: { m: Metrics }) {
+  return <Accordion items={RES.map((r) => ({ value: r.id, title: <Band m={m} r={r} dense />, content: <Detail m={m} r={r} /> }))} />;
+}
+
+/** V2-b — 오른쪽 서랍. 띠는 그대로 두고 세부는 Sheet 로. 요약을 잃지 않는다. */
+function V2b({ m }: { m: Metrics }) {
+  const [open, setOpen] = useState<Res | null>(null);
+  const r = RES.find((x) => x.id === open);
+  return (
+    <>
+      <Card className="divide-y divide-line p-0 [&>*]:px-6 [&>*]:py-5">{RES.map((r) => <button key={r.id} type="button" onClick={() => setOpen(r.id)} className="block w-full text-start interactive first:rounded-t-card last:rounded-b-card"><Band m={m} r={r} /></button>)}</Card>
+      <Sheet open={!!open} onOpenChange={(o) => !o && setOpen(null)} title={r?.label ?? ""} description="세부 — 띠는 뒤에 그대로" wide>{r && <Detail m={m} r={r} />}</Sheet>
+    </>
+  );
+}
+
+/** V2-c — 전체 스위치. '자세히' 하나로 네 띠가 한꺼번에 펼쳐진다. 요약/자세히 두 상태뿐. */
+function V2c({ m }: { m: Metrics }) {
+  const [more, setMore] = useState(false);
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end"><Switch checked={more} onCheckedChange={setMore} label="자세히" boxed /></div>
+      <Card className="divide-y divide-line p-0 [&>*]:px-6 [&>*]:py-5">{RES.map((r) => <div key={r.id}><Band m={m} r={r} />{more && <div className="mt-6 rounded-control bg-card-2 p-5 appear surface-2"><Detail m={m} r={r} /></div>}</div>)}</Card>
+    </div>
+  );
+}
+
+/** V2-d — 아래 도킹 패널(활성 상태 보기). 띠를 고르면 아래 고정 패널이 그 세부로 바뀐다. 띠는 항상 넷 다 보인다. */
+function V2d({ m }: { m: Metrics }) {
+  const [sel, setSel] = useState<Res>("cpu");
+  const r = RES.find((x) => x.id === sel)!;
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-4 gap-5">{RES.map((r) => { const h = hostOf(m.h, r.id); return <Card key={r.id}><p className="text-body text-mute">{r.label}</p><p className="mt-1 text-title tabular-nums text-text">{h.value}<span className="ms-2 text-caption text-mute">{h.sub}</span></p><div className="mt-3 ps-8"><AreaChart series={h.series} max={h.max} height={72} format={h.fmt} /></div></Card>; })}</div>
-      <Card title="컨테이너 × 리소스" subtitle="칸 색 = 사용량 — 회색 20% 미만 · 파랑 · 주황 50% · 빨강 80%">
-        <div className="grid grid-cols-[180px_repeat(4,1fr)] gap-2">
-          <span />{RES.map((r) => <span key={r.id} className="text-center text-caption text-mute">{r.label}</span>)}
-          {m.ct.map((c) => <><ListRow key={c.name} lead={<Tile size="sm">{c.name[0].toUpperCase()}</Tile>} title={c.name} sub={c.stack} />{RES.map((r) => { const p = r.pct(c); return <div key={r.id} className={cn("flex h-12 items-center justify-center rounded-[8px] font-mono text-body tabular-nums tint", heat(p))}>{r.unit(c)}</div>; })}</>)}
-        </div>
-      </Card>
+      <Card className="divide-y divide-line p-0 [&>*]:px-6 [&>*]:py-5">{RES.map((r) => <button key={r.id} type="button" aria-pressed={sel === r.id} onClick={() => setSel(r.id)} className={cn("block w-full text-start interactive first:rounded-t-card last:rounded-b-card", sel === r.id && "bg-card-2 [--card-2:var(--c3)] [--card-3:var(--c4)]")}><Band m={m} r={r} /></button>)}</Card>
+      <Card title={r.label} subtitle="선택한 띠의 세부 — 위 띠를 바꾸면 여기가 바뀐다"><Detail m={m} r={r} /></Card>
     </div>
   );
 }
@@ -125,14 +148,14 @@ export function Lab() {
   const m = useLive(live);
   return (
     <AppShell>
-      <PageHeading crumbs={[{ label: "캔버스", href: "#" }, { label: "Lab" }]} title="리소스" meta={<><IconText icon="insight">한눈에 — 네 리소스와 누가 많이 쓰는지가 한 화면에. 경우의 수 넷</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `실시간 흉내 · 1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<Switch checked={live} onCheckedChange={setLive} label="실시간" boxed />} />
+      <PageHeading crumbs={[{ label: "캔버스", href: "#" }, { label: "Lab" }]} title="리소스" meta={<><IconText icon="insight">가로 띠 4단 + 세부 드러내기 — 경우의 수 넷</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `실시간 흉내 · 1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<Switch checked={live} onCheckedChange={setLive} label="실시간" boxed />} />
       <div className="mt-8">
-        <Option id="v1" title="V1 · 2×2 사분면" from="Netdata 의 리소스별 섹션을 사분면으로 압축" fit="리소스마다 '값 · 추세 · 누가' 를 같은 칸에서 읽고 싶을 때"><V1 m={m} /></Option>
-        <Option id="v2" title="V2 · 가로 띠 4단" from="활성 상태 보기 아래 패널을 리소스마다 한 줄로" fit="시계열을 넓게 보고 싶을 때. 위아래로 훑는다"><V2 m={m} /></Option>
-        <Option id="v3" title="V3 · 매트릭스 + 시계열 스택" from="Portainer 의 컨테이너 표 + Grafana 의 미니 그래프 열" fit="'누가' 가 먼저고 정렬해서 보고 싶을 때. 열 머리를 누르면 정렬"><V3 m={m} /></Option>
-        <Option id="v4" title="V4 · 시계열 4장 + 히트맵" from="Grafana 상단 KPI 줄 + Datadog 호스트맵의 색 칸" fit="가장 압축된 한눈. 색으로 문제 컨테이너가 튀어 보인다"><V4 m={m} /></Option>
+        <Option id="v2a" title="V2-a · 행 펼침" from="아코디언 — 띠가 곧 트리거" fit="궁금한 리소스만 그 자리에서. 여러 개 동시에 열어 비교"><V2a m={m} /></Option>
+        <Option id="v2b" title="V2-b · 오른쪽 서랍" from="Sheet — 요약은 뒤에 남는다" fit="요약을 잃지 않고 깊이 볼 때. 서랍 안에서 범위·목록"><V2b m={m} /></Option>
+        <Option id="v2c" title="V2-c · 전체 스위치" from="'자세히' 하나로 모두 펼침 — 두 상태" fit="클릭 없이 훑고 싶을 때. 넷을 한 번에 비교"><V2c m={m} /></Option>
+        <Option id="v2d" title="V2-d · 아래 도킹 패널" from="활성 상태 보기의 아래 패널 — 선택된 띠가 바뀐다" fit="띠 넷은 항상 보이고 세부는 하나만. 가장 안정된 레이아웃"><V2d m={m} /></Option>
       </div>
-      <Container className="mt-16 px-0"><Card title="추천"><KeyValue items={[{ label: "한눈", value: "V4 — 시계열 4장으로 '지금·추세' 를, 히트맵으로 '누가' 를. 800 안에 다 들어온다" }, { label: "파고들기", value: "히트맵 칸을 누르면 위의 탭형(정렬된 목록 + 합계)으로. 두 화면이 한 쌍" }, { label: "새 API", value: "컨테이너별 디스크 r/w·네트워크 rx/tx(docker stats) · 가동시간·재시작 · 시계열 샘플" }]} /></Card></Container>
+      <Container className="mt-16 px-0"><Card title="추천"><KeyValue items={[{ label: "선택", value: "V2-d — 띠 넷은 늘 보이고 세부는 아래 하나. 활성 상태 보기와 같은 손맛, 레이아웃이 흔들리지 않는다" }, { label: "차선", value: "V2-a — 비교가 필요하면 둘을 동시에 펼친다. 대신 화면이 길어진다" }, { label: "새 API", value: "컨테이너별 디스크 r/w·네트워크 rx/tx(docker stats) · 가동시간·재시작 · 시계열 샘플" }]} /></Card></Container>
     </AppShell>
   );
 }
