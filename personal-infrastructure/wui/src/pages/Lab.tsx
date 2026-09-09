@@ -90,9 +90,8 @@ const hostOf = (H: Metrics["h"], id: Res) => ({
 }[id]);
 const topOf = (CT: Ct[], r: (typeof RES)[number], n = 3) => [...CT].sort((a, b) => r.pct(b) - r.pct(a)).slice(0, n);
 
-/** 리소스 띠 — 요약 한 줄: 이름·값 · 시계열 · 오른쪽 막대. 오른쪽이 곧 범례다(그래프 아래 범례 없음). `bars` 로 막대 방식을 고른다. */
-type Bars = "rows" | "share" | "stack" | "stack-thick" | "stack-two" | "stack-rows" | "stack-col" | "columns";
-function Band({ m, r, dense, bars = "rows" }: { m: Metrics; r: (typeof RES)[number]; dense?: boolean; bars?: Bars }) {
+/** 리소스 띠 — 요약 한 줄: 이름·값 · 시계열 · 오른쪽 쌓은 띠 + 정렬된 행(전체·상위 3). 오른쪽이 곧 범례다(그래프 아래 범례 없음). 사용자 선택 2026-09-09: V2-3-c. */
+function Band({ m, r, dense }: { m: Metrics; r: (typeof RES)[number]; dense?: boolean }) {
   const h = hostOf(m.h, r.id);
   const split = useContext(SplitCtx);
   const top = topOf(m.ct, r);
@@ -106,65 +105,15 @@ function Band({ m, r, dense, bars = "rows" }: { m: Metrics; r: (typeof RES)[numb
   const ACC = "var(--accent)";
   const rest = Math.max(0, h.pct - top.reduce((a, c) => a + share(c), 0)); // 상위 3 밖의 나머지 사용량
   const Stack = ({ h: hh }: { h: string }) => <div className={cn("flex gap-0.5 overflow-hidden rounded-full bg-card-3", hh)}>{top.map((c) => <span key={c.name} className="h-full rounded-full move" style={{ width: `${share(c)}%`, background: colorOfCt(m, c.name) }} />)}<span className="h-full rounded-full move" style={{ width: `${rest}%`, background: ACC, opacity: 0.35 }} /></div>;
-  const Row = ({ name, color, pct, value, strong }: { name: string; color?: string; pct: number; value: string; strong?: boolean }) => (
-    <div className="grid grid-cols-[80px_1fr_80px] items-center gap-2">
-      <span className={cn("flex items-center gap-2 truncate text-caption", strong ? "text-text" : "text-sub")}>{color && <span className="size-2 shrink-0 rounded-full" style={{ background: color }} />}{name}</span>
-      <Progress value={pct} color={color} tone={color ? undefined : "accent"} className="[&>div:first-child]:hidden" />
-      <span className={cn("text-end font-mono text-caption tabular-nums", strong ? "text-text" : "text-mute")}>{value}</span>
-    </div>
-  );
   const side = !split
     ? <div className="space-y-1.5">{top.map((c) => <div key={c.name} className="grid grid-cols-[80px_1fr_80px] items-center gap-2"><span className="truncate text-caption text-text">{c.name}</span><Progress value={r.pct(c)} tone={r.tone(c)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{r.unit(c)}</span></div>)}</div>
-    : bars === "rows"
-    ? <div className="space-y-1.5"><Row name="전체" color={ACC} pct={h.pct} value={h.tv} strong />{top.map((c) => <Row key={c.name} name={c.name} color={colorOfCt(m, c.name)} pct={r.pct(c)} value={r.unit(c)} />)}</div>
-    : bars === "share"
-    ? <div className="space-y-1.5"><Row name="전체" color={ACC} pct={h.pct} value={h.tv} strong />{top.map((c) => <Row key={c.name} name={c.name} color={colorOfCt(m, c.name)} pct={share(c)} value={`${Math.round((r.raw(c) / all) * 100)}%`} />)}</div>
-    : bars === "stack"
-    ? <div>
-        <div className="mb-2 flex items-center justify-between text-caption"><span className="text-text">전체</span><span className="font-mono tabular-nums text-text">{h.tv}</span></div>
+    : <div>
         <Stack h="h-2" />
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">{top.map((c) => <span key={c.name} className="inline-flex items-center gap-2 whitespace-nowrap text-caption text-mute"><span className="size-2 rounded-full" style={{ background: colorOfCt(m, c.name) }} />{c.name} <span className="font-mono tabular-nums text-text">{r.unit(c)}</span></span>)}</div>
-      </div>
-    : bars === "stack-thick"
-    ? <div>
-        <div className="mb-2 flex items-center justify-between text-caption"><span className="text-text">전체</span><span className="font-mono tabular-nums text-text">{h.tv}</span></div>
-        <div className="flex h-6 gap-0.5 overflow-hidden rounded-[6px] bg-card-3">{top.map((c) => <span key={c.name} className="flex h-full items-center overflow-hidden rounded-[6px] px-1.5 text-[11px] text-ink move" style={{ width: `${share(c)}%`, background: colorOfCt(m, c.name) }}>{share(c) > 14 && <span className="truncate">{c.name}</span>}</span>)}<span className="h-full rounded-[6px] move" style={{ width: `${rest}%`, background: ACC, opacity: 0.35 }} /></div>
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">{top.filter((c) => share(c) <= 14).map((c) => <span key={c.name} className="inline-flex items-center gap-2 whitespace-nowrap text-caption text-mute"><span className="size-2 rounded-full" style={{ background: colorOfCt(m, c.name) }} />{c.name}</span>)}</div>
-      </div>
-    : bars === "stack-two"
-    ? <div className="space-y-3">
-        <div>
-          <div className="mb-2 flex items-center justify-between text-caption"><span className="text-text">얼마나</span><span className="font-mono tabular-nums text-text">{h.tv}</span></div>
-          <div className="flex h-2 overflow-hidden rounded-full bg-card-3"><span className="h-full rounded-full move" style={{ width: `${h.pct}%`, background: ACC }} /></div>
+        <div className="mt-2.5 space-y-0.5">
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-[11px] leading-4"><span className="size-1.5 rounded-full" style={{ background: ACC }} /><span className="text-text">전체</span><span className="font-mono tabular-nums text-text">{h.tv}</span></div>
+          {top.map((c) => <div key={c.name} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-[11px] leading-4"><span className="size-1.5 rounded-full" style={{ background: colorOfCt(m, c.name) }} /><span className="text-sub">{c.name}</span><span className="font-mono tabular-nums text-mute">{r.unit(c)}</span></div>)}
         </div>
-        <div>
-          <div className="mb-2 flex items-center justify-between text-caption"><span className="text-text">누가</span><span className="font-mono tabular-nums text-mute">상위 3 · {Math.round((top.reduce((a, c) => a + r.raw(c), 0) / all) * 100)}%</span></div>
-          <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-card-3">{top.map((c) => <span key={c.name} className="h-full rounded-full move" style={{ width: `${(r.raw(c) / all) * 100}%`, background: colorOfCt(m, c.name) }} />)}</div>
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">{top.map((c) => <span key={c.name} className="inline-flex items-center gap-2 whitespace-nowrap text-caption text-mute"><span className="size-2 rounded-full" style={{ background: colorOfCt(m, c.name) }} />{c.name} <span className="font-mono tabular-nums text-text">{Math.round((r.raw(c) / all) * 100)}%</span></span>)}</div>
-        </div>
-      </div>
-    : bars === "stack-rows"
-    ? <div>
-        <Stack h="h-2" />
-        <div className="mt-3 space-y-1">
-          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-caption"><span className="size-2 rounded-full" style={{ background: ACC }} /><span className="text-text">전체</span><span className="font-mono tabular-nums text-text">{h.tv}</span></div>
-          {top.map((c) => <div key={c.name} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-caption"><span className="size-2 rounded-full" style={{ background: colorOfCt(m, c.name) }} /><span className="text-sub">{c.name}</span><span className="font-mono tabular-nums text-mute">{r.unit(c)}</span></div>)}
-        </div>
-      </div>
-    : bars === "stack-col"
-    ? <div className="flex items-stretch gap-4">
-        <div className="flex h-16 w-3 flex-col-reverse gap-0.5 overflow-hidden rounded-[4px] bg-card-3">{top.map((c) => <span key={c.name} className="w-full rounded-[3px] move" style={{ height: `${share(c)}%`, background: colorOfCt(m, c.name) }} />)}<span className="w-full rounded-[3px] move" style={{ height: `${rest}%`, background: ACC, opacity: 0.35 }} /></div>
-        <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
-          <div className="flex items-center justify-between gap-2 text-caption"><span className="text-text">전체</span><span className="font-mono tabular-nums text-text">{h.tv}</span></div>
-          {top.map((c) => <div key={c.name} className="flex items-center justify-between gap-2 text-caption"><span className="inline-flex items-center gap-2 truncate text-sub"><span className="size-2 shrink-0 rounded-full" style={{ background: colorOfCt(m, c.name) }} />{c.name}</span><span className="font-mono tabular-nums text-mute">{r.unit(c)}</span></div>)}
-        </div>
-      </div>
-    : <div className="grid grid-cols-4 gap-3">{[{ name: "전체", color: ACC, pct: h.pct, value: h.tv.split(" ")[0], strong: true }, ...top.map((c) => ({ name: c.name, color: colorOfCt(m, c.name), pct: r.pct(c), value: r.unit(c).split(" ")[0], strong: false }))].map((x) => (
-        <div key={x.name} className="flex flex-col items-center gap-1.5">
-          <span className={cn("whitespace-nowrap font-mono text-[11px] tabular-nums", x.strong ? "text-text" : "text-mute")}>{x.value}</span>
-          <div className="flex h-12 w-full items-end overflow-hidden rounded-[4px] bg-card-3"><span className="w-full rounded-[4px] move" style={{ height: `${x.pct}%`, background: x.color }} /></div>
-          <span className={cn("truncate text-caption", x.strong ? "text-text" : "text-sub")}>{x.name}</span>
-        </div>))}</div>;
+      </div>;
   return (
     <div className={cn("grid items-center gap-8", dense ? "grid-cols-[140px_1fr_240px]" : "grid-cols-[160px_1fr_260px]")}>
       <div><p className="text-body text-mute">{r.label}</p><p className="mt-1 text-title tabular-nums text-text">{h.value}</p><p className="text-caption text-mute">{h.sub}</p></div>
@@ -204,8 +153,8 @@ function Detail({ m, r }: { m: Metrics; r: (typeof RES)[number] }) {
 }
 
 /** V2 — 띠 넷만. 토글 "컨테이너별" 이 켜지면 각 띠의 그래프에 상위 3 컨테이너가 색 선으로 얹힌다. */
-function V2({ m, bars }: { m: Metrics; bars?: Bars }) {
-  return <Card className="divide-y divide-line p-0 [&>*]:px-6 [&>*]:py-5">{RES.map((r) => <div key={r.id}><Band m={m} r={r} bars={bars} /></div>)}</Card>;
+function V2({ m }: { m: Metrics }) {
+  return <Card className="divide-y divide-line p-0 [&>*]:px-6 [&>*]:py-5">{RES.map((r) => <div key={r.id}><Band m={m} r={r} /></div>)}</Card>;
 }
 
 /** V2-a — 행 펼침. 띠를 누르면 그 자리에서 세부가 펼쳐진다(unfold). 한 번에 여러 개 열 수 있다. */
@@ -255,16 +204,9 @@ export function Lab() {
   return (
     <SplitCtx.Provider value={split}>
     <AppShell>
-      <PageHeading crumbs={[{ label: "캔버스", href: "#" }, { label: "Lab" }]} title="리소스" meta={<><IconText icon="insight">가로 띠 4단 · 오른쪽 막대 넷 + 세부 드러내기 넷</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `실시간 흉내 · 1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<><Switch checked={split} onCheckedChange={setSplit} label="컨테이너별" boxed /><Switch checked={live} onCheckedChange={setLive} label="실시간" boxed /></>} />
+      <PageHeading crumbs={[{ label: "캔버스", href: "#" }, { label: "Lab" }]} title="리소스" meta={<><IconText icon="insight">가로 띠 4단 + 세부 드러내기 넷</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `실시간 흉내 · 1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<><Switch checked={split} onCheckedChange={setSplit} label="컨테이너별" boxed /><Switch checked={live} onCheckedChange={setLive} label="실시간" boxed /></>} />
       <div className="mt-8">
-        <Option id="v2" title="V2-1 · 행 막대 — 자기 상한 기준" from="오른쪽이 곧 범례. 전체(accent) 한 줄 + 상위 3, 막대는 각자 상한(코어·메모리 limit) 대비" fit="컨테이너가 자기 한도에 얼마나 붙었나. 상한 근접이 바로 보인다"><V2 m={m} /></Option>
-        <Option id="v2s" title="V2-2 · 행 막대 — 전체 기준" from="전체 막대가 자, 컨테이너 막대는 그 안의 몫(share). 값도 %" fit="전체 사용량을 누가 얼마나 가져갔나. 막대 폭이 그대로 기여도"><V2 m={m} bars="share" /></Option>
-        <Option id="v2k" title="V2-3 · 쌓은 막대" from="Meter 처럼 한 줄에 상위 3 몫을 쌓고 나머지는 accent 옅게. 아래에 색 점 범례" fit="가장 짧다. 세로 여유가 없을 때, 구성비 한 줄"><V2 m={m} bars="stack" /></Option>
-        <Option id="v2k1" title="V2-3-a · 두꺼운 띠 — 안쪽 라벨" from="24px 띠 안에 이름을 쓴다(폭 14% 넘는 칸만). 범례는 못 쓴 칸만" fit="범례 줄이 거의 사라진다. 큰 몫은 띠에서 바로 읽힘"><V2 m={m} bars="stack-thick" /></Option>
-        <Option id="v2k2" title="V2-3-b · 두 줄 — 얼마나 · 누가" from="윗줄은 사용/여유(accent), 아랫줄은 컨테이너 구성비 100% 폭" fit="'얼마나' 와 '누가' 를 분리. 구성비가 사용량이 작아도 크게 보인다"><V2 m={m} bars="stack-two" /></Option>
-        <Option id="v2k3" title="V2-3-c · 띠 + 정렬된 행" from="띠 아래 전체·상위 3 을 점·이름·값 세로 정렬" fit="값을 세로로 비교. 범례가 줄바꿈으로 흔들리지 않는다"><V2 m={m} bars="stack-rows" /></Option>
-        <Option id="v2k4" title="V2-3-d · 세로 기둥 + 목록" from="시계열 높이의 세로 쌓기 기둥 하나 + 옆에 목록" fit="시계열 끝 '지금' 의 단면. 기둥이 그래프와 같은 높이라 눈이 이어진다"><V2 m={m} bars="stack-col" /></Option>
-        <Option id="v2v" title="V2-4 · 세로 막대" from="전체 + 상위 3 을 기둥 넷으로, 값은 위·이름은 아래" fit="시계열 옆에 놓였을 때 '지금' 을 세로로 대응. 눈이 옆으로 흐르지 않는다"><V2 m={m} bars="columns" /></Option>
+        <Option id="v2" title="V2 · 가로 띠 4단 — 쌓은 띠 + 정렬된 행" from="오른쪽이 곧 범례. 8px 쌓은 띠(상위 3 몫 + 나머지 accent 옅게) 아래 전체·상위 3 을 점·이름·값으로 세로 정렬" fit="띠 높이가 늘지 않고 값이 세로로 비교된다. 사용자 선택 2026-09-09"><V2 m={m} /></Option>
         <Option id="v2a" title="V2-a · 행 펼침" from="아코디언 — 띠가 곧 트리거" fit="궁금한 리소스만 그 자리에서. 여러 개 동시에 열어 비교"><V2a m={m} /></Option>
         <Option id="v2b" title="V2-b · 오른쪽 서랍" from="Sheet — 요약은 뒤에 남는다" fit="요약을 잃지 않고 깊이 볼 때. 서랍 안에서 범위·목록"><V2b m={m} /></Option>
         <Option id="v2c" title="V2-c · 전체 스위치" from="'자세히' 하나로 모두 펼침 — 두 상태" fit="클릭 없이 훑고 싶을 때. 넷을 한 번에 비교"><V2c m={m} /></Option>
