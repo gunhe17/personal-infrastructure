@@ -1,19 +1,19 @@
-import { AreaChart, AppShell, Badge, Card, Container, Dot, FilterTabs, Switch, IconText, KeyValue, List, ListRow, Meter, PageHeading, Progress, RingGauge, SectionHeading, Sparkline, StatusDot, Tile, Tracker, type Series } from "@/ui";
+import { AreaChart, AppShell, Card, cn, Container, Dot, Switch, IconText, KeyValue, ListRow, PageHeading, Progress, SectionHeading, Tile } from "@/ui";
 import { useEffect, useRef, useState } from "react";
 
 // Lab — 결정 전 후보를 실제 크기로 나란히 본다. 여기 있는 것은 아직 키트가 아니다. 선택되면 유기체/템플릿으로 옮긴다.
 const rnd = (seed: number) => { let x = seed; return () => { x = (x * 9301 + 49297) % 233280; return x / 233280; }; };
 const walk = (seed: number, n: number, base: number, amp: number) => { const r = rnd(seed); let v = base; return Array.from({ length: n }, () => { v = Math.max(0, v + (r() - 0.5) * amp); return Math.round(v * 10) / 10; }); };
-type Ct = { name: string; stack: string; cpu: number; mem: number; memLimit: number; uptime: string; restarts: number; status: string; spark: number[] };
+type Ct = { name: string; stack: string; cpu: number; mem: number; memLimit: number; uptime: string; restarts: number; status: string; spark: number[]; memSpark: number[]; wr: number; rd: number; wrRate: number; rdRate: number; vol: number; rx: number; tx: number; rxRate: number; txRate: number };
 type Metrics = { h: { cpu: number[]; mem: number[]; disk: number[]; net_in: number[]; net_out: number[] }; ct: Ct[]; tick: number };
 const seed = (): Metrics => ({
   h: { cpu: walk(1, 48, 22, 12), mem: walk(2, 48, 6.1, 0.6), disk: walk(3, 48, 212, 0.4), net_in: walk(4, 48, 12, 8), net_out: walk(5, 48, 3, 3) },
   ct: [
-    { name: "api", stack: "dockerfile", cpu: 12, mem: 1.4, memLimit: 2, uptime: "6일 4시간", restarts: 0, status: "running", spark: walk(11, 24, 12, 6) },
-    { name: "blog", stack: "static", cpu: 1, mem: 0.1, memLimit: 0.5, uptime: "14일", restarts: 0, status: "running", spark: walk(12, 24, 1, 1) },
-    { name: "worker", stack: "node", cpu: 34, mem: 2.9, memLimit: 3, uptime: "3시간", restarts: 3, status: "running", spark: walk(13, 24, 30, 14) },
-    { name: "postgres", stack: "db", cpu: 4, mem: 0.9, memLimit: 2, uptime: "14일", restarts: 0, status: "running", spark: walk(14, 24, 4, 2) },
-    { name: "edge", stack: "caddy", cpu: 2, mem: 0.2, memLimit: 0.5, uptime: "14일", restarts: 0, status: "running", spark: walk(15, 24, 2, 1) },
+    { name: "api", stack: "dockerfile", cpu: 12, mem: 1.4, memLimit: 2, uptime: "6일 4시간", restarts: 0, status: "running", spark: walk(11, 24, 12, 6), memSpark: walk(21, 24, 1.4, 0.2), wr: 3.7, rd: 254.9, wrRate: 0.2, rdRate: 1.1, vol: 12, rx: 18.6, tx: 90.2, rxRate: 6, txRate: 2 },
+    { name: "blog", stack: "static", cpu: 1, mem: 0.1, memLimit: 0.5, uptime: "14일", restarts: 0, status: "running", spark: walk(12, 24, 1, 1), memSpark: walk(22, 24, 0.1, 0.02), wr: 0, rd: 15.4, wrRate: 0, rdRate: 0.1, vol: 0.4, rx: 2.1, tx: 40.5, rxRate: 1, txRate: 3 },
+    { name: "worker", stack: "node", cpu: 34, mem: 2.9, memLimit: 3, uptime: "3시간", restarts: 3, status: "running", spark: walk(13, 24, 30, 14), memSpark: walk(23, 24, 2.9, 0.3), wr: 108.7, rd: 7.1, wrRate: 4.8, rdRate: 0.3, vol: 38, rx: 0.9, tx: 0.3, rxRate: 0.4, txRate: 0.1 },
+    { name: "postgres", stack: "db", cpu: 4, mem: 0.9, memLimit: 2, uptime: "14일", restarts: 0, status: "running", spark: walk(14, 24, 4, 2), memSpark: walk(24, 24, 0.9, 0.1), wr: 90.3, rd: 18.6, wrRate: 1.6, rdRate: 0.5, vol: 46, rx: 4.2, tx: 3.9, rxRate: 0.8, txRate: 0.7 },
+    { name: "edge", stack: "caddy", cpu: 2, mem: 0.2, memLimit: 0.5, uptime: "14일", restarts: 0, status: "running", spark: walk(15, 24, 2, 1), memSpark: walk(25, 24, 0.2, 0.03), wr: 0.7, rd: 140.8, wrRate: 0, rdRate: 0.2, vol: 0.1, rx: 176, tx: 142, rxRate: 12, txRate: 11 },
   ],
   tick: 0,
 });
@@ -22,7 +22,7 @@ const step = (m: Metrics): Metrics => {
   const r = rnd(1000 + m.tick);
   const nudge = (v: number, amp: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, Math.round((v + (r() - 0.5) * amp) * 10) / 10));
   const push = (a: number[], v: number) => [...a.slice(1), v];
-  const ct = m.ct.map((c) => { const cpu = nudge(c.cpu, c.cpu > 20 ? 10 : 3, 0, 100); return { ...c, cpu, mem: nudge(c.mem, 0.08, 0.05, c.memLimit), spark: push(c.spark, cpu) }; });
+  const ct = m.ct.map((c) => { const cpu = nudge(c.cpu, c.cpu > 20 ? 10 : 3, 0, 100); const mem = nudge(c.mem, 0.08, 0.05, c.memLimit); const wrRate = nudge(c.wrRate, c.wrRate > 1 ? 2 : 0.2, 0, 20), rdRate = nudge(c.rdRate, 0.4, 0, 10), rxRate = nudge(c.rxRate, c.rxRate > 5 ? 4 : 0.6, 0, 30), txRate = nudge(c.txRate, c.txRate > 5 ? 4 : 0.4, 0, 30); return { ...c, cpu, mem, spark: push(c.spark, cpu), memSpark: push(c.memSpark, mem), wrRate, rdRate, rxRate, txRate, wr: Math.round((c.wr + wrRate / 1024) * 10) / 10, rd: Math.round((c.rd + rdRate / 1024) * 10) / 10, rx: Math.round((c.rx + rxRate / 8 / 1024) * 100) / 100, tx: Math.round((c.tx + txRate / 8 / 1024) * 100) / 100 }; });
   const cpu = Math.min(100, Math.round(ct.reduce((a, c) => a + c.cpu, 0) * 0.4 + 4 + r() * 3));
   const mem = Math.round(ct.reduce((a, c) => a + c.mem, 0) * 10) / 10 + 0.6;
   const last = (a: number[]) => a[a.length - 1];
@@ -35,8 +35,6 @@ function useLive(on: boolean) {
   return m;
 }
 const last = (a: number[]) => a[a.length - 1];
-const X24 = ["00", "03", "06", "09", "12", "15", "18", "21", "24"];
-const DISK = [{ label: "이미지", value: 84, tone: "info" }, { label: "볼륨", value: 96, tone: "running" }, { label: "백업", value: 32, tone: "progress" }] as const;
 
 function Option({ id, title, from, fit, children }: { id: string; title: string; from: string; fit: string; children: React.ReactNode }) {
   return (
@@ -47,126 +45,77 @@ function Option({ id, title, from, fit, children }: { id: string; title: string;
   );
 }
 
-/** A — 지표 카드 + 스파크라인. 큰 숫자가 주인공, 추세는 옆에. */
-function OptionA({ m }: { m: Metrics }) {
-  const H = m.h, CT = m.ct;
+type Res = "cpu" | "mem" | "disk" | "net";
+// ── 한눈에 보기 — 네 리소스가 동시에 보이는 경우의 수 ─────────────────────────
+const RES: { id: Res; label: string; unit: (c: Ct) => string; pct: (c: Ct) => number; tone: (c: Ct) => "accent" | "good" | "warn" | "bad" }[] = [
+  { id: "cpu", label: "CPU", unit: (c) => `${Math.round(c.cpu)}%`, pct: (c) => c.cpu, tone: (c) => (c.cpu > 30 ? "warn" : "accent") },
+  { id: "mem", label: "메모리", unit: (c) => `${c.mem.toFixed(1)} GB`, pct: (c) => (c.mem / c.memLimit) * 100, tone: (c) => (c.mem / c.memLimit > 0.9 ? "bad" : "good") },
+  { id: "disk", label: "디스크", unit: (c) => `${(c.wrRate + c.rdRate).toFixed(1)} MB/s`, pct: (c) => Math.min(100, (c.wrRate + c.rdRate) * 5), tone: () => "accent" },
+  { id: "net", label: "네트워크", unit: (c) => `${(c.rxRate + c.txRate).toFixed(1)} Mb/s`, pct: (c) => Math.min(100, (c.rxRate + c.txRate) * 2), tone: () => "good" },
+];
+const hostOf = (H: Metrics["h"], id: Res) => ({
+  cpu: { value: `${Math.round(last(H.cpu))}%`, sub: "8 코어", series: [{ name: "호스트", points: H.cpu, tone: "accent" as const }], max: 100, fmt: (v: number) => `${v}%` },
+  mem: { value: `${last(H.mem).toFixed(1)} GB`, sub: "16 GB 중", series: [{ name: "사용", points: H.mem, tone: "info" as const }], max: 16, fmt: (v: number) => `${v}G` },
+  disk: { value: `${Math.round(last(H.disk))} GB`, sub: "512 GB 중", series: [{ name: "읽기", points: H.net_out.map((v) => v / 2), tone: "info" as const }, { name: "쓰기", points: H.net_in.map((v) => v / 3), tone: "warn" as const }], max: undefined, fmt: (v: number) => `${v}M` },
+  net: { value: `↓${Math.round(last(H.net_in))} ↑${Math.round(last(H.net_out))}`, sub: "Mb/s", series: [{ name: "받음", points: H.net_in, tone: "good" as const }, { name: "보냄", points: H.net_out, tone: "accent" as const }], max: undefined, fmt: (v: number) => `${v}` },
+}[id]);
+const topOf = (CT: Ct[], r: (typeof RES)[number], n = 3) => [...CT].sort((a, b) => r.pct(b) - r.pct(a)).slice(0, n);
+
+/** V1 — 2×2 사분면. 리소스 하나가 칸 하나: 값 · 시계열 · 상위 3. */
+function V1({ m }: { m: Metrics }) {
+  return (
+    <div className="grid grid-cols-2 gap-5">
+      {RES.map((r) => { const h = hostOf(m.h, r.id); return (
+        <Card key={r.id} title={r.label} subtitle={h.sub} actions={<span className="text-title tabular-nums text-text">{h.value}</span>}>
+          <div className="ps-8"><AreaChart series={h.series} max={h.max} height={96} format={h.fmt} /></div>
+          <div className="mt-4 space-y-2">{topOf(m.ct, r).map((c) => <div key={c.name} className="grid grid-cols-[96px_1fr_88px] items-center gap-3"><span className="truncate text-body text-text">{c.name}</span><Progress value={r.pct(c)} tone={r.tone(c)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{r.unit(c)}</span></div>)}</div>
+        </Card>); })}
+    </div>
+  );
+}
+
+/** V2 — 가로 띠 4단. 활성 상태 보기의 아래 패널을 리소스마다 한 줄씩: 합계 · 시계열 · 상위 3. */
+function V2({ m }: { m: Metrics }) {
+  return (
+    <Card className="divide-y divide-line p-0 [&>*]:px-6 [&>*]:py-5">
+      {RES.map((r) => { const h = hostOf(m.h, r.id); return (
+        <div key={r.id} className="grid grid-cols-[160px_1fr_260px] items-center gap-8">
+          <div><p className="text-body text-mute">{r.label}</p><p className="mt-1 text-title tabular-nums text-text">{h.value}</p><p className="text-caption text-mute">{h.sub}</p></div>
+          <div className="ps-8"><AreaChart series={h.series} max={h.max} height={64} format={h.fmt} /></div>
+          <div className="space-y-1.5">{topOf(m.ct, r).map((c) => <div key={c.name} className="grid grid-cols-[80px_1fr_80px] items-center gap-2"><span className="truncate text-caption text-text">{c.name}</span><Progress value={r.pct(c)} tone={r.tone(c)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{r.unit(c)}</span></div>)}</div>
+        </div>); })}
+    </Card>
+  );
+}
+
+/** V3 — 매트릭스 + 시계열 스택. 왼쪽은 컨테이너 × 리소스 표(칸마다 막대), 오른쪽은 리소스 넷의 시계열. */
+function V3({ m }: { m: Metrics }) {
+  const [sort, setSort] = useState<Res>("cpu");
+  const r0 = RES.find((r) => r.id === sort)!;
+  const rows = [...m.ct].sort((a, b) => r0.pct(b) - r0.pct(a));
+  return (
+    <div className="grid grid-cols-[1fr_320px] gap-5">
+      <Card className="p-0">
+        <div className="grid grid-cols-[180px_repeat(4,1fr)] items-center gap-4 border-b border-line px-6 py-3 text-caption text-mute"><span>컨테이너</span>{RES.map((r) => <button key={r.id} type="button" onClick={() => setSort(r.id)} className={cn("-mx-2 rounded-[6px] px-2 py-1 text-start interactive", sort === r.id && "text-text")}>{r.label}{sort === r.id && " ↓"}</button>)}</div>
+        <div className="divide-y divide-line px-6">{rows.map((c) => <div key={c.name} className="grid grid-cols-[180px_repeat(4,1fr)] items-center gap-4 py-3"><ListRow lead={<Tile size="sm">{c.name[0].toUpperCase()}</Tile>} title={c.name} sub={c.stack} />{RES.map((r) => <div key={r.id}><div className="flex items-baseline justify-between"><span className="font-mono text-body tabular-nums text-text">{r.unit(c)}</span></div><Progress value={r.pct(c)} tone={r.tone(c)} className="mt-1 [&>div:first-child]:hidden" /></div>)}</div>)}</div>
+      </Card>
+      <div className="flex flex-col gap-5">{RES.map((r) => { const h = hostOf(m.h, r.id); return <Card key={r.id} className="p-4"><div className="flex items-baseline justify-between"><span className="text-body text-mute">{r.label}</span><span className="font-mono text-body tabular-nums text-text">{h.value}</span></div><div className="mt-2 ps-8"><AreaChart series={h.series} max={h.max} height={48} format={h.fmt} /></div></Card>; })}</div>
+    </div>
+  );
+}
+
+/** V4 — 시계열 4장 위, 아래는 컨테이너 × 리소스 히트맵(칸 색이 곧 사용량). 가장 압축된 한눈. */
+function V4({ m }: { m: Metrics }) {
+  const heat = (p: number) => p > 80 ? "bg-bad text-white" : p > 50 ? "bg-warn text-ink" : p > 20 ? "bg-accent text-white" : "bg-card-2 text-text";
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-4 gap-5">
-        <Card><p className="text-body text-mute">CPU</p><p className="mt-4 text-display tabular-nums text-text">{Math.round(last(H.cpu))}<span className="text-title text-mute">%</span></p><div className="mt-3 flex items-end gap-4"><Badge size="sm" tone="running">8 코어</Badge><div className="min-w-0 flex-1"><Sparkline fluid points={H.cpu} height={40} className="block w-full" /></div></div></Card>
-        <Card><p className="text-body text-mute">메모리</p><p className="mt-4 text-display tabular-nums text-text">{last(H.mem).toFixed(1)}<span className="text-title text-mute">/16 GB</span></p><div className="mt-3 flex items-end gap-4"><Badge size="sm" tone="running">{Math.round((last(H.mem) / 16) * 100)}%</Badge><div className="min-w-0 flex-1"><Sparkline fluid points={H.mem} height={40} className="block w-full" /></div></div></Card>
-        <Card><p className="text-body text-mute">디스크</p><p className="mt-4 text-display tabular-nums text-text">{Math.round(last(H.disk))}<span className="text-title text-mute">/512 GB</span></p><div className="mt-3 flex items-end gap-4"><Badge size="sm" tone="progress">{Math.round((last(H.disk) / 512) * 100)}% · 남은 {Math.round(512 - last(H.disk))}</Badge><div className="min-w-0 flex-1"><Sparkline fluid points={H.disk} tone="warn" height={40} className="block w-full" /></div></div></Card>
-        <Card><p className="text-body text-mute">네트워크</p><p className="mt-4 text-display tabular-nums text-text">{Math.round(last(H.net_in))}<span className="text-title text-mute"> Mb/s</span></p><div className="mt-3 flex items-end gap-4"><Badge size="sm" tone="idle">↑ {Math.round(last(H.net_out))} Mb/s</Badge><div className="min-w-0 flex-1"><Sparkline fluid points={H.net_in} tone="good" height={40} className="block w-full" /></div></div></Card>
-      </div>
-      <Card title="컨테이너별" subtitle="지난 24시간 평균 CPU · 최대 메모리">
-        <div className="space-y-4">
-          {CT.map((c) => (
-            <div key={c.name} className="grid grid-cols-[200px_1fr_1fr_96px] items-center gap-6">
-              <ListRow lead={<Tile size="sm">{c.name[0].toUpperCase()}</Tile>} title={c.name} sub={c.stack} />
-              <Progress label="CPU" value={c.cpu} tone={c.cpu > 30 ? "warn" : "accent"} />
-              <Progress label={`메모리 ${c.mem} / ${c.memLimit} GB`} value={(c.mem / c.memLimit) * 100} tone={c.mem / c.memLimit > 0.9 ? "bad" : "good"} />
-              <IconText icon="clock">{c.uptime}</IconText>
-            </div>
-          ))}
+      <div className="grid grid-cols-4 gap-5">{RES.map((r) => { const h = hostOf(m.h, r.id); return <Card key={r.id}><p className="text-body text-mute">{r.label}</p><p className="mt-1 text-title tabular-nums text-text">{h.value}<span className="ms-2 text-caption text-mute">{h.sub}</span></p><div className="mt-3 ps-8"><AreaChart series={h.series} max={h.max} height={72} format={h.fmt} /></div></Card>; })}</div>
+      <Card title="컨테이너 × 리소스" subtitle="칸 색 = 사용량 — 회색 20% 미만 · 파랑 · 주황 50% · 빨강 80%">
+        <div className="grid grid-cols-[180px_repeat(4,1fr)] gap-2">
+          <span />{RES.map((r) => <span key={r.id} className="text-center text-caption text-mute">{r.label}</span>)}
+          {m.ct.map((c) => <><ListRow key={c.name} lead={<Tile size="sm">{c.name[0].toUpperCase()}</Tile>} title={c.name} sub={c.stack} />{RES.map((r) => { const p = r.pct(c); return <div key={r.id} className={cn("flex h-12 items-center justify-center rounded-[8px] font-mono text-body tabular-nums tint", heat(p))}>{r.unit(c)}</div>; })}</>)}
         </div>
       </Card>
-    </div>
-  );
-}
-
-/** B — 링 게이지. 사용률 넷을 원으로, 디스크는 칸으로 쪼갠다. */
-function OptionB({ m }: { m: Metrics }) {
-  const H = m.h, CT = m.ct;
-  return (
-    <div className="space-y-5">
-      <Card>
-        <div className="grid grid-cols-4">
-          <RingGauge value={last(H.cpu)} label="CPU" detail={`8 코어 · 부하 ${(last(H.cpu) / 12).toFixed(1)}`} />
-          <RingGauge value={(last(H.mem) / 16) * 100} label="메모리" detail={`${last(H.mem).toFixed(1)} / 16 GB`} />
-          <RingGauge value={(last(H.disk) / 512) * 100} label="디스크" detail={`${Math.round(last(H.disk))} / 512 GB`} />
-          <RingGauge value={(last(H.net_in) / 40) * 100} label="네트워크" detail={`↓${Math.round(last(H.net_in))} ↑${Math.round(last(H.net_out))} Mb/s`} />
-        </div>
-      </Card>
-      <div className="grid grid-cols-2 gap-5">
-        <Card title="디스크" subtitle="512 GB 중"><Meter total={512} unit="G" parts={[...DISK]} /></Card>
-        <Card title="메모리" subtitle="16 GB 중"><Meter total={16} unit="G" parts={[{ label: "api", value: CT[0].mem, tone: "info" }, { label: "worker", value: CT[2].mem, tone: "progress" }, { label: "postgres", value: CT[3].mem, tone: "running" }, { label: "그 외", value: Math.round((CT[1].mem + CT[4].mem) * 10) / 10, tone: "idle" }]} /></Card>
-      </div>
-      <List title="컨테이너">
-        {CT.map((c) => <ListRow key={c.name} lead={<Tile size="sm">{c.name[0].toUpperCase()}</Tile>} title={c.name} sub={c.stack} value={<span className="font-mono text-body">{Math.round(c.cpu)}% · {c.mem.toFixed(1)} GB</span>} end={<StatusDot tone={c.restarts ? "progress" : "running"} muted>{c.restarts ? `재시작 ${c.restarts}` : c.uptime}</StatusDot>} />)}
-      </List>
-    </div>
-  );
-}
-
-/** C — 시계열 중심. 범위를 고르고 네 그래프를 읽는다. */
-function OptionC({ m }: { m: Metrics }) {
-  const H = m.h, CT = m.ct;
-  const [range, setRange] = useState("24h");
-  const net: Series[] = [{ name: "들어옴", points: H.net_in, tone: "good" }, { name: "나감", points: H.net_out, tone: "accent" }];
-  const cpu: Series[] = [{ name: "호스트", points: H.cpu, tone: "accent" }, { name: "worker", points: CT[2].spark.concat(CT[2].spark), tone: "warn" }];
-  return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between"><div className="flex items-center gap-5"><StatusDot tone="running">엣지 up</StatusDot><IconText icon="clock">가동 14일 6시간</IconText><IconText icon="server">부하 1.8 · 8 코어</IconText></div><FilterTabs value={range} onValueChange={setRange} items={[{ value: "1h", label: "1시간" }, { value: "24h", label: "24시간" }, { value: "7d", label: "7일" }]} /></div>
-      <div className="grid grid-cols-2 gap-5">
-        <Card title="CPU" subtitle="% · 호스트와 가장 바쁜 컨테이너"><div className="ps-8"><AreaChart series={cpu} max={100} format={(v) => `${v}%`} xLabels={X24} /></div></Card>
-        <Card title="메모리" subtitle="GB · 16 GB 중"><div className="ps-8"><AreaChart series={[{ name: "사용", points: H.mem, tone: "info" }]} max={16} format={(v) => `${v}G`} xLabels={X24} /></div></Card>
-        <Card title="디스크" subtitle="GB · 512 GB 중"><div className="ps-8"><AreaChart series={[{ name: "사용", points: H.disk, tone: "warn" }]} max={512} format={(v) => `${v}G`} xLabels={X24} /></div></Card>
-        <Card title="네트워크" subtitle="Mb/s"><div className="ps-8"><AreaChart series={net} format={(v) => `${v}`} xLabels={X24} /></div></Card>
-      </div>
-    </div>
-  );
-}
-
-/** D — 컨테이너 중심. 호스트 총량은 얇은 띠로, 행마다 스파크라인. */
-function OptionD({ m }: { m: Metrics }) {
-  const H = m.h, CT = m.ct;
-  return (
-    <div className="space-y-5">
-      <Card>
-        <div className="grid grid-cols-3 gap-8">
-          <Progress label="CPU · 8 코어" value={last(H.cpu)} />
-          <Progress label={`메모리 · ${last(H.mem).toFixed(1)} / 16 GB`} value={Math.round((last(H.mem) / 16) * 100)} tone="good" />
-          <Progress label={`디스크 · ${Math.round(last(H.disk))} / 512 GB`} value={Math.round((last(H.disk) / 512) * 100)} tone="warn" />
-        </div>
-      </Card>
-      <List title="컨테이너 5" subtitle="CPU 는 지난 24시간, 메모리는 최대치">
-        {CT.map((c) => (
-          <div key={c.name} className="grid grid-cols-[180px_1fr_120px_140px_120px_100px] items-center gap-4">
-            <ListRow lead={<Tile size="sm">{c.name[0].toUpperCase()}</Tile>} title={c.name} sub={c.stack} />
-            <Sparkline fluid points={c.spark} tone={c.cpu > 30 ? "warn" : "accent"} height={32} className="block w-full" />
-            <span className="font-mono text-body tabular-nums text-text">{Math.round(c.cpu)}%</span>
-            <div><span className="font-mono text-body tabular-nums text-text">{c.mem} / {c.memLimit} GB</span><Progress value={(c.mem / c.memLimit) * 100} tone={c.mem / c.memLimit > 0.9 ? "bad" : "good"} className="mt-1 [&>div:first-child]:hidden" /></div>
-            <IconText icon="clock">{c.uptime}</IconText>
-            {c.restarts ? <Badge size="sm" tone="progress">재시작 {c.restarts}</Badge> : <StatusDot tone="running" muted>안정</StatusDot>}
-          </div>
-        ))}
-      </List>
-      <Card title="30일 가동" subtitle="하루 한 칸 — 재시작이나 다운이 있으면 색이 바뀐다"><Tracker items={Array.from({ length: 30 }, (_, i) => ({ tone: i === 7 ? "failed" : i === 27 ? "progress" : "running", label: `${i + 1}일` }))} /></Card>
-    </div>
-  );
-}
-
-
-/** 선택된 구성 — CPU · 메모리 · 네트워크는 시계열, 디스크 · 메모리는 칸 나누기. 나머지 자리는 비워 둔다. */
-function ResourceScreen({ m }: { m: Metrics }) {
-  const H = m.h, CT = m.ct;
-  const [range, setRange] = useState("24h");
-  const X = range === "1h" ? ["-60m", "-45m", "-30m", "-15m", "지금"] : range === "7d" ? ["월", "화", "수", "목", "금", "토", "일"] : X24;
-  return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-5"><StatusDot tone="running">엣지 up</StatusDot><IconText icon="clock">가동 14일 6시간</IconText><IconText icon="server">부하 {(last(H.cpu) / 12).toFixed(1)} · 8 코어</IconText></div>
-        <FilterTabs value={range} onValueChange={setRange} items={[{ value: "1h", label: "1시간" }, { value: "24h", label: "24시간" }, { value: "7d", label: "7일" }]} />
-      </div>
-      <div className="grid grid-cols-3 gap-5">
-        <Card title="CPU" subtitle={`${Math.round(last(H.cpu))}% · 호스트와 worker`}><div className="ps-8"><AreaChart series={[{ name: "호스트", points: H.cpu, tone: "accent" }, { name: "worker", points: CT[2].spark.concat(CT[2].spark), tone: "warn" }]} max={100} height={140} format={(v) => `${v}%`} xLabels={X} /></div></Card>
-        <Card title="메모리" subtitle={`${last(H.mem).toFixed(1)} / 16 GB`}><div className="ps-8"><AreaChart series={[{ name: "사용", points: H.mem, tone: "info" }]} max={16} height={140} format={(v) => `${v}G`} xLabels={X} /></div></Card>
-        <Card title="네트워크" subtitle={`↓${Math.round(last(H.net_in))} ↑${Math.round(last(H.net_out))} Mb/s`}><div className="ps-8"><AreaChart series={[{ name: "들어옴", points: H.net_in, tone: "good" }, { name: "나감", points: H.net_out, tone: "accent" }]} height={140} format={(v) => `${v}`} xLabels={X} /></div></Card>
-      </div>
-      <div className="grid grid-cols-2 gap-5">
-        <Card title="디스크" subtitle="512 GB 중 · 이미지 · 볼륨 · 백업"><Meter total={512} unit="G" parts={[{ label: "이미지", value: 84, tone: "info" }, { label: "볼륨", value: Math.round(last(H.disk) - 84 - 32), tone: "running" }, { label: "백업", value: 32, tone: "progress" }]} /></Card>
-        <Card title="메모리" subtitle="16 GB 중 · 컨테이너별"><Meter total={16} unit="G" parts={[{ label: "api", value: CT[0].mem, tone: "info" }, { label: "worker", value: CT[2].mem, tone: "progress" }, { label: "postgres", value: CT[3].mem, tone: "running" }, { label: "그 외", value: Math.round((CT[1].mem + CT[4].mem + 0.6) * 10) / 10, tone: "idle" }]} /></Card>
-      </div>
     </div>
   );
 }
@@ -176,16 +125,14 @@ export function Lab() {
   const m = useLive(live);
   return (
     <AppShell>
-      <PageHeading crumbs={[{ label: "캔버스", href: "#" }, { label: "Lab" }]} title="리소스" meta={<><IconText icon="insight">CPU · 메모리 · 네트워크는 시계열, 디스크 · 메모리는 칸 나누기 — 사용자 선택(2026-09-09)</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `실시간 흉내 · 1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<Switch checked={live} onCheckedChange={setLive} label="실시간" boxed />} />
-      <div className="mt-8"><ResourceScreen m={m} /></div>
-      <div className="mt-24">
-        <SectionHeading title="후보 넷 (참고)" description="위 화면을 고르기 전 비교했던 네 표현. 같은 실시간 데이터를 읽는다." />
-        <Option id="a" title="A · 지표 카드 + 스파크라인" from="Beszel 의 네 핵심 지표 · PatternFly KPI 카드(큰 숫자 + 스파크라인)" fit="한눈에 '지금' 을 보고 싶을 때. 추세는 힌트만"><OptionA m={m} /></Option>
-        <Option id="b" title="B · 링 게이지 + 칸 나누기" from="Synology · Proxmox 의 사용률 원 · Tremor Category Bar" fit="'얼마나 찼나' 가 핵심일 때. 디스크·메모리를 누가 먹는지까지"><OptionB m={m} /></Option>
-        <Option id="c" title="C · 시계열 그래프" from="Netdata · Grafana 의 시간축 · 범위 선택" fit="'언제 튀었나' 를 찾을 때. 밤새 무슨 일이 있었는지"><OptionC m={m} /></Option>
-        <Option id="d" title="D · 컨테이너 중심 표" from="Portainer · Beszel 의 컨테이너 목록(행마다 CPU·메모리·가동)" fit="'누가 문제인가' 를 찾을 때. 재시작·가동시간이 같이 보인다"><OptionD m={m} /></Option>
+      <PageHeading crumbs={[{ label: "캔버스", href: "#" }, { label: "Lab" }]} title="리소스" meta={<><IconText icon="insight">한눈에 — 네 리소스와 누가 많이 쓰는지가 한 화면에. 경우의 수 넷</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `실시간 흉내 · 1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<Switch checked={live} onCheckedChange={setLive} label="실시간" boxed />} />
+      <div className="mt-8">
+        <Option id="v1" title="V1 · 2×2 사분면" from="Netdata 의 리소스별 섹션을 사분면으로 압축" fit="리소스마다 '값 · 추세 · 누가' 를 같은 칸에서 읽고 싶을 때"><V1 m={m} /></Option>
+        <Option id="v2" title="V2 · 가로 띠 4단" from="활성 상태 보기 아래 패널을 리소스마다 한 줄로" fit="시계열을 넓게 보고 싶을 때. 위아래로 훑는다"><V2 m={m} /></Option>
+        <Option id="v3" title="V3 · 매트릭스 + 시계열 스택" from="Portainer 의 컨테이너 표 + Grafana 의 미니 그래프 열" fit="'누가' 가 먼저고 정렬해서 보고 싶을 때. 열 머리를 누르면 정렬"><V3 m={m} /></Option>
+        <Option id="v4" title="V4 · 시계열 4장 + 히트맵" from="Grafana 상단 KPI 줄 + Datadog 호스트맵의 색 칸" fit="가장 압축된 한눈. 색으로 문제 컨테이너가 튀어 보인다"><V4 m={m} /></Option>
       </div>
-      <Container className="mt-16 px-0"><Card title="추천"><KeyValue items={[{ label: "홈 화면", value: "A 의 지표 카드 4장을 맨 위에, 그 아래 D 의 컨테이너 표. '지금' + '누가' 를 한 화면에" }, { label: "리소스 상세", value: "C 의 시계열 4장 + B 의 디스크·메모리 칸 나누기. '언제' + '얼마나' 는 눌러서" }, { label: "새 API", value: "가동시간·재시작 횟수(docker inspect) · 볼륨 크기 · 시계열 샘플(현재 usage 는 24h 집계뿐)" }]} /></Card></Container>
+      <Container className="mt-16 px-0"><Card title="추천"><KeyValue items={[{ label: "한눈", value: "V4 — 시계열 4장으로 '지금·추세' 를, 히트맵으로 '누가' 를. 800 안에 다 들어온다" }, { label: "파고들기", value: "히트맵 칸을 누르면 위의 탭형(정렬된 목록 + 합계)으로. 두 화면이 한 쌍" }, { label: "새 API", value: "컨테이너별 디스크 r/w·네트워크 rx/tx(docker stats) · 가동시간·재시작 · 시계열 샘플" }]} /></Card></Container>
     </AppShell>
   );
 }
