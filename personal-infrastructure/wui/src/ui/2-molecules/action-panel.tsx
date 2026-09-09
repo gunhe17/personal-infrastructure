@@ -6,7 +6,7 @@ export function ActionPanel({ title, description, action, below, children, class
   return (
     <Card className={className}>
       <div className={cn("flex gap-6", below ? "flex-col" : "items-center justify-between")}>
-        <div className="min-w-0"><p className="text-body-lg font-medium text-text">{title}</p>{description && <p className="mt-1 text-body text-mute">{description}</p>}</div>
+        <div className="min-w-0"><p className="text-body font-medium text-text">{title}</p>{description && <p className="mt-1 text-caption text-mute">{description}</p>}</div>
         {action && <div className={cn("flex shrink-0 items-center gap-3", below && "w-full [&>*]:flex-1")}>{action}</div>}
       </div>
       {children && <div className="mt-5">{children}</div>}

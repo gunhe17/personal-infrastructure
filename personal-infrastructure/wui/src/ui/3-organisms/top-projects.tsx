@@ -11,7 +11,7 @@ const TOP: { name: string; sub: string; value: string; icon: IconName }[] = [{ n
 export function TopProjects() {
   return (
     <Card title="상위 프로젝트" actions={<IconButton label="더" icon="more" />}>
-      <ul className="space-y-5">{TOP.map((t) => <li key={t.name}><ListRow lead={<Tile><Icon name={t.icon} /></Tile>} title={t.name} sub={t.sub} value={t.value} /></li>)}</ul>
+      <ul className="space-y-5">{TOP.map((t) => <li key={t.name}><ListRow lead={<Tile size="sm"><Icon name={t.icon} /></Tile>} title={t.name} sub={t.sub} value={t.value} /></li>)}</ul>
     </Card>
   );
 }

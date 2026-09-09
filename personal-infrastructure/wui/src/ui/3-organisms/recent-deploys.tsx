@@ -17,10 +17,10 @@ export function RecentDeploys() {
       <ul className="space-y-5">
         {DEPLOYS.map((r) => (
           <li key={r.name} className="grid grid-cols-[1fr_150px_110px_90px] items-center gap-4">
-            <ListRow lead={<Tile>{r.name[0].toUpperCase()}</Tile>} title={r.name} sub={r.sub} />
-            <Badge tone="idle"><Icon name="chart" size="sm" className="text-mute" />{r.stack}</Badge>
+            <ListRow lead={<Tile size="sm">{r.name[0].toUpperCase()}</Tile>} title={r.name} sub={r.sub} />
+            <Badge tone="idle" size="sm"><Icon name="chart" size="sm" className="text-mute" />{r.stack}</Badge>
             <IconText icon="calendar">{r.date}</IconText>
-            <span className="flex items-center justify-end gap-3 text-body-lg tabular-nums text-text"><Donut value={r.pct} />{r.pct}%</span>
+            <span className="flex items-center justify-end gap-3 text-body tabular-nums text-text"><Donut value={r.pct} />{r.pct}%</span>
           </li>
         ))}
       </ul>

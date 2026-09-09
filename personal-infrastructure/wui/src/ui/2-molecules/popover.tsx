@@ -11,7 +11,7 @@ export function Popover({ trigger, title, description, children, align = "start"
       <BasePopover.Portal>
         <BasePopover.Positioner align={align} sideOffset={8} className="z-30 outline-none">
           <BasePopover.Popup className={cn("w-72 p-5 enter-drop", POPUP)}>
-            {title && <BasePopover.Title className="text-body-lg font-medium text-text">{title}</BasePopover.Title>}
+            {title && <BasePopover.Title className="text-body font-medium text-text">{title}</BasePopover.Title>}
             {description && <BasePopover.Description className="mt-1 text-body text-mute">{description}</BasePopover.Description>}
             {children && <div className="mt-4">{children}</div>}
           </BasePopover.Popup>

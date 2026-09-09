@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 export function Callout({ title, children, className }: { title: React.ReactNode; children?: React.ReactNode; className?: string }) {
   return (
     <div role="alert" className={cn("rounded-card bg-accent p-6 text-white", className)}>
-      <p className="text-body-lg font-medium">{title}</p>
+      <p className="text-body font-medium">{title}</p>
       {children && <div className="mt-1 text-body text-white/80">{children}</div>}
     </div>
   );
