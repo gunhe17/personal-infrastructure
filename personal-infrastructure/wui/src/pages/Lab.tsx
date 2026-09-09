@@ -1,4 +1,4 @@
-import { AreaChart, AppShell, Card, cn, Dot, Switch, IconText, PageHeading, Progress, SectionHeading } from "@/ui";
+import { AreaChart, AppShell, Card, cn, Dot, Switch, IconText, Meter, PageHeading, Progress, SectionHeading } from "@/ui";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 // Lab — 결정 전 후보를 실제 크기로 나란히 본다. 여기 있는 것은 아직 키트가 아니다. 선택되면 유기체/템플릿으로 옮긴다.
@@ -74,7 +74,7 @@ type Res = "cpu" | "mem" | "disk" | "net";
 const RES: { id: Res; label: string; unit: (c: Ct) => string; raw: (c: Ct) => number; pct: (c: Ct) => number; tone: (c: Ct) => "accent" | "good" | "warn" | "bad" }[] = [
   { id: "cpu", label: "CPU", unit: (c) => `${Math.round(c.cpu)}%`, raw: (c) => c.cpu, pct: (c) => c.cpu, tone: (c) => (c.cpu > 30 ? "warn" : "accent") },
   { id: "mem", label: "메모리", unit: (c) => `${c.mem.toFixed(1)} GB`, raw: (c) => c.mem, pct: (c) => (c.mem / c.memLimit) * 100, tone: (c) => (c.mem / c.memLimit > 0.9 ? "bad" : "good") },
-  { id: "disk", label: "디스크", unit: (c) => `${(c.wrRate + c.rdRate).toFixed(1)} MB/s`, raw: (c) => c.wrRate + c.rdRate, pct: (c) => Math.min(100, (c.wrRate + c.rdRate) * 5), tone: () => "accent" },
+  { id: "disk", label: "디스크 I/O", unit: (c) => `${(c.wrRate + c.rdRate).toFixed(1)} MB/s`, raw: (c) => c.wrRate + c.rdRate, pct: (c) => Math.min(100, (c.wrRate + c.rdRate) * 5), tone: () => "accent" },
   { id: "net", label: "네트워크", unit: (c) => `${(c.rxRate + c.txRate).toFixed(1)} Mb/s`, raw: (c) => c.rxRate + c.txRate, pct: (c) => Math.min(100, (c.rxRate + c.txRate) * 2), tone: () => "good" },
 ];
 const CHART = ["var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"]; // 컨테이너 색 넷 — 전체(accent)와 겹치지 않게 chart-1 은 안 쓴다
@@ -84,7 +84,7 @@ const SplitCtx = createContext(false);
 const hostOf = (H: Metrics["h"], id: Res) => ({
   cpu: { value: `${Math.round(last(H.cpu))}%`, sub: "8 코어", series: [{ name: "호스트", points: H.cpu, tone: "accent" as const }], total: H.cpu, max: 100, pct: last(H.cpu), tv: `${Math.round(last(H.cpu))}%`, fmt: (v: number) => `${v}%` },
   mem: { value: `${last(H.mem).toFixed(1)} GB`, sub: "16 GB 중", series: [{ name: "사용", points: H.mem, tone: "info" as const }], total: H.mem, max: 16, pct: (last(H.mem) / 16) * 100, tv: `${last(H.mem).toFixed(1)} GB`, fmt: (v: number) => `${v}G` },
-  disk: { value: `${Math.round(last(H.disk))} GB`, sub: "512 GB 중", series: [{ name: "읽기", points: H.net_out.map((v) => v / 6), tone: "info" as const }, { name: "쓰기", points: H.net_in.map((v) => v / 9), tone: "warn" as const }], total: H.net_out.map((v, i) => Math.round((v / 6 + H.net_in[i] / 9) * 10) / 10), max: undefined, pct: Math.min(100, (last(H.net_out) / 6 + last(H.net_in) / 9) * 5), tv: `${(last(H.net_out) / 6 + last(H.net_in) / 9).toFixed(1)} MB/s`, fmt: (v: number) => `${v}M` },
+  disk: { value: `${(last(H.net_out) / 6 + last(H.net_in) / 9).toFixed(1)} MB/s`, sub: `읽기 ${(last(H.net_out) / 6).toFixed(1)} · 쓰기 ${(last(H.net_in) / 9).toFixed(1)}`, series: [{ name: "읽기", points: H.net_out.map((v) => v / 6), tone: "info" as const }, { name: "쓰기", points: H.net_in.map((v) => v / 9), tone: "warn" as const }], total: H.net_out.map((v, i) => Math.round((v / 6 + H.net_in[i] / 9) * 10) / 10), max: undefined, pct: Math.min(100, (last(H.net_out) / 6 + last(H.net_in) / 9) * 5), tv: `${(last(H.net_out) / 6 + last(H.net_in) / 9).toFixed(1)} MB/s`, fmt: (v: number) => `${v}M` },
   net: { value: `↓${Math.round(last(H.net_in))} ↑${Math.round(last(H.net_out))}`, sub: "Mb/s", series: [{ name: "받음", points: H.net_in, tone: "good" as const }, { name: "보냄", points: H.net_out, tone: "accent" as const }], total: H.net_in.map((v, i) => Math.round((v + H.net_out[i]) * 10) / 10), max: undefined, pct: Math.min(100, last(H.net_in) + last(H.net_out)), tv: `${Math.round(last(H.net_in) + last(H.net_out))} Mb/s`, fmt: (v: number) => `${v}` },
 }[id]);
 const topOf = (CT: Ct[], r: (typeof RES)[number], n = 3) => [...CT].sort((a, b) => r.pct(b) - r.pct(a)).slice(0, n);
@@ -137,6 +137,19 @@ function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?:
   );
 }
 
+/** 디스크 용량 — 띠 밖의 카드(사용자 결정 2026-09-09: I/O 는 띠, 용량은 분리). 저량이라 시계열 대신 Meter(이미지·볼륨·백업) + 볼륨 큰 컨테이너 3. */
+function DiskCapacity({ m }: { m: Metrics }) {
+  const used = last(m.h.disk), img = 84, bak = 32, vol = Math.round(used - img - bak);
+  const top = [...m.ct].sort((a, b) => b.vol - a.vol).slice(0, 3);
+  return (
+    <Card title="디스크 용량" subtitle={`512 GB 중 ${Math.round(used)} GB · 남은 ${Math.round(512 - used)} GB`}>
+      <Meter label="쓰임새" total={512} unit="G" parts={[{ label: "이미지", value: img, tone: "info" }, { label: "볼륨", value: vol, tone: "running" }, { label: "백업", value: bak, tone: "progress" }]} />
+      <p className="mt-6 mb-3 text-caption text-mute">볼륨 큰 컨테이너</p>
+      <div className="space-y-2">{top.map((c) => <div key={c.name} className="grid grid-cols-[96px_1fr_72px] items-center gap-3"><span className="flex items-center gap-2 truncate text-body text-text"><span className="size-2 shrink-0 rounded-full" style={{ background: colorOfCt(m, c.name) }} />{c.name}</span><Progress value={(c.vol / vol) * 100} color={colorOfCt(m, c.name)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{c.vol} GB</span></div>)}</div>
+    </Card>
+  );
+}
+
 /** V2 — 띠 넷. 한 카드에 line 으로 나누거나(기본) 카드 넷으로. */
 function V2({ m, sz = "base" }: { m: Metrics; sz?: SizeId }) {
   const z: Size = SIZES[sz];
@@ -155,6 +168,7 @@ export function Lab() {
       <PageHeading crumbs={[{ label: "캔버스", href: "#" }, { label: "Lab" }]} title="리소스" meta={<><IconText icon="insight">가로 띠 4단 — 크기 규격 여섯</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `실시간 흉내 · 1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<><Switch checked={split} onCheckedChange={setSplit} label="컨테이너별" boxed /><Switch checked={live} onCheckedChange={setLive} label="실시간" boxed /></>} />
       <div className="mt-8">
         <Option id="v2" title="S1 · 기준" from="띠 안쪽 24/20 · 열 사이 32 · 이름 160 / 그래프 / 오른쪽 260 · 그래프 64 · 값 22 · 행 11/16" fit="지금 것. 카드 규격(안쪽 24)과 같은 호흡"><V2 m={m} /></Option>
+        <Option id="disk" title="디스크 용량 — 띠 밖 카드" from="띠는 유량(I/O)만, 용량은 저량이라 Meter 카드로 분리. 띠 카드 아래 격자에 반 폭" fit="꽉 참 위험과 '누가 디스크를 먹나' 를 한 카드에서. 90초 시계열이 필요 없다"><div className="grid grid-cols-2 gap-5"><DiskCapacity m={m} /></div></Option>
         <Option id="v2t" title="S2 · 촘촘" from="안쪽 20/16 · 열 사이 24 · 128 / 그래프 / 220 · 그래프 48 · 값 17 · 행 11/16 붙임" fit="넷이 한 화면 위쪽에 들어가야 할 때. 아래에 다른 카드가 이어질 홈"><V2 m={m} sz="tight" /></Option>
         <Option id="v2r" title="S3 · 여유" from="안쪽 28 · 열 사이 40 · 176 / 그래프 / 288 · 그래프 88(눈금 3) · 값 26 · 행 13 + 점 8" fit="리소스 화면이 이 카드 하나일 때. 큰 숫자가 주인공"><V2 m={m} sz="roomy" /></Option>
         <Option id="v2c" title="S4 · 그래프 우선" from="이름 112 · 오른쪽 200 으로 좁혀 그래프에 폭을 주고 높이 72" fit="파형이 정보일 때. 이름·값은 caption 으로 물러난다"><V2 m={m} sz="chart" /></Option>
