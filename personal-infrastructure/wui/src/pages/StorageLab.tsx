@@ -1,4 +1,4 @@
-import { AppShell, AreaChart, Card, cn, Dot, IconText, NOW, PageHeading, Progress, SectionHeading, Sparkline } from "@/ui";
+import { AppShell, AreaChart, Card, cn, DeviceList, Dot, IconText, NOW, PageHeading, Progress, SectionHeading, Sparkline } from "@/ui";
 
 // StorageCard Lab — 디스크를 정밀하게 보기 위한 후보들(사용자 요청 2026-09-09). 확정되면 유기체로 옮긴다.
 const GB = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1)} TB` : v >= 10 ? `${Math.round(v)} GB` : `${v.toFixed(1)} GB`);
@@ -43,34 +43,9 @@ const forecast = (h: number[], total: number) => {
   return { line: Array.from({ length: n }, (_, i) => Math.min(total, tail + g * (i + 1) * 6)) };
 };
 
-/** V1 — 기준. 막대 위에 사용량·총량, 오른쪽에 30일 변화. 시간 축은 열 머리에 한 번만 적는다(사용자 질문 2026-09-09: 일 기준 변화량임을 어떻게 명시하나). */
+/** V1 — 확정안. 키트의 `DeviceList` 를 그대로 쓴다(사용자 결정 2026-09-09: 컴포넌트로 승격). */
 function V1() {
-  return (
-    <Card title="Devices">
-      <div className="divide-y divide-line">
-        {DEVICES.map((d) => {
-          const pct = (used(d) / d.total) * 100;
-          return (
-            <div key={d.id} className="grid grid-cols-[180px_1fr_160px] items-center gap-6 py-4">
-              <DevName d={d} />
-              <span className="min-w-0">
-                <span className="mb-2 flex items-baseline justify-between gap-3 text-caption">
-                  <span className="font-mono tabular-nums" style={{ color: tone(d) }}>{GB(used(d))} used</span>
-                  <span className="font-mono tabular-nums text-mute">{GB(d.total)}</span>
-                </span>
-                <Progress value={pct} color={tone(d)} className="[&>div:first-child]:hidden" />
-              </span>
-              {/* 오른쪽 — 30일 변화. 축 양 끝을 그래프 아래에 늘 적어 둔다(사용자 지정 2026-09-09). */}
-              <span className="justify-self-end">
-                <Sparkline fluid points={d.hist} tone={pct > 60 ? "warn" : "accent"} height={32} className="block w-[160px]" />
-                <span className="mt-1 flex w-[160px] justify-between font-mono text-[11px] leading-4 text-mute"><span>30d ago</span><span>now</span></span>
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </Card>
-  );
+  return <DeviceList devices={DEVICES.map((d) => ({ name: d.title, used: used(d), total: d.total, history: d.hist }))} />;
 }
 
 /** V2 — 막대 안에 값. 라벨 줄을 없애 행이 낮아진다. 채운 칸 끝에 사용량, 트랙 끝에 총량. */
