@@ -2,7 +2,8 @@
 import { cn } from "@/lib/cn";
 
 const COLOR = { accent: "var(--accent)", good: "var(--good)", warn: "var(--warn)", bad: "var(--bad)", info: "var(--info)", mute: "var(--mute)" } as const;
-export type Series = { name: string; points: number[]; tone?: keyof typeof COLOR };
+export type Series = { name: string; points: number[]; tone?: keyof typeof COLOR; color?: string; fill?: boolean };
+const colorOf = (s: Series) => s.color ?? COLOR[s.tone ?? "accent"];
 export function AreaChart({ series, max, height = 160, format = (v) => String(v), xLabels, className }: { series: Series[]; max?: number; height?: number; format?: (v: number) => string; xLabels?: string[]; className?: string }) {
   const W = 1000, top = Math.max(max ?? 0, ...series.flatMap((s) => s.points)) || 1;
   const n = Math.max(...series.map((s) => s.points.length));
@@ -15,9 +16,9 @@ export function AreaChart({ series, max, height = 160, format = (v) => String(v)
       <div className="relative" style={{ height }}>
         <svg viewBox={`0 0 ${W} ${height}`} preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible" aria-hidden="true">
           {ticks.map((t) => <line key={t} x1={0} x2={W} y1={y(top * t)} y2={y(top * t)} stroke="var(--line)" strokeWidth="1" vectorEffect="non-scaling-stroke" />)}
-          {series.map((s) => { const c = COLOR[s.tone ?? "accent"]; return (
+          {series.map((s) => { const c = colorOf(s); return (
             <g key={s.name}>
-              <path d={`${path(s.points)} L${W},${height} L0,${height} Z`} fill={c} opacity=".15" />
+              {s.fill !== false && <path d={`${path(s.points)} L${W},${height} L0,${height} Z`} fill={c} opacity=".15" />}
               <path d={path(s.points)} fill="none" stroke={c} strokeWidth="2" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
               <circle cx={W} cy={y(s.points[s.points.length - 1])} r="3" fill={c} vectorEffect="non-scaling-stroke" />
             </g>); })}
@@ -27,7 +28,7 @@ export function AreaChart({ series, max, height = 160, format = (v) => String(v)
         </div>
       </div>
       {xLabels && <div className="mt-2 flex justify-between font-mono text-[11px] tabular-nums text-mute">{xLabels.map((l, i) => <span key={i}>{l}</span>)}</div>}
-      {series.length > 1 && <div className="mt-3 flex flex-wrap gap-4">{series.map((s) => <span key={s.name} className="inline-flex items-center gap-2 text-caption text-mute"><span className="size-2 rounded-full" style={{ background: COLOR[s.tone ?? "accent"] }} />{s.name}</span>)}</div>}
+      {series.length > 1 && <div className="mt-3 flex flex-wrap gap-4">{series.map((s) => <span key={s.name} className="inline-flex items-center gap-2 text-caption text-mute"><span className="size-2 rounded-full" style={{ background: colorOf(s) }} />{s.name}</span>)}</div>}
     </div>
   );
 }

@@ -1,19 +1,19 @@
 import { Accordion, AreaChart, AppShell, Card, cn, Container, Dot, FilterTabs, Meter, Sheet, Sparkline, Switch, IconText, KeyValue, ListRow, PageHeading, Progress, SectionHeading, Tile } from "@/ui";
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 // Lab — 결정 전 후보를 실제 크기로 나란히 본다. 여기 있는 것은 아직 키트가 아니다. 선택되면 유기체/템플릿으로 옮긴다.
 const rnd = (seed: number) => { let x = seed; return () => { x = (x * 9301 + 49297) % 233280; return x / 233280; }; };
 const walk = (seed: number, n: number, base: number, amp: number) => { const r = rnd(seed); let v = base; return Array.from({ length: n }, () => { v = Math.max(0, v + (r() - 0.5) * amp); return Math.round(v * 10) / 10; }); };
-type Ct = { name: string; stack: string; cpu: number; mem: number; memLimit: number; uptime: string; restarts: number; status: string; spark: number[]; memSpark: number[]; wr: number; rd: number; wrRate: number; rdRate: number; vol: number; rx: number; tx: number; rxRate: number; txRate: number };
+type Ct = { name: string; stack: string; cpu: number; mem: number; memLimit: number; uptime: string; restarts: number; status: string; spark: number[]; memSpark: number[]; ioSpark: number[]; netSpark: number[]; wr: number; rd: number; wrRate: number; rdRate: number; vol: number; rx: number; tx: number; rxRate: number; txRate: number };
 type Metrics = { h: { cpu: number[]; mem: number[]; disk: number[]; net_in: number[]; net_out: number[] }; ct: Ct[]; tick: number };
 const seed = (): Metrics => ({
   h: { cpu: walk(1, 48, 22, 12), mem: walk(2, 48, 6.1, 0.6), disk: walk(3, 48, 212, 0.4), net_in: walk(4, 48, 12, 8), net_out: walk(5, 48, 3, 3) },
   ct: [
-    { name: "api", stack: "dockerfile", cpu: 12, mem: 1.4, memLimit: 2, uptime: "6일 4시간", restarts: 0, status: "running", spark: walk(11, 24, 12, 6), memSpark: walk(21, 24, 1.4, 0.2), wr: 3.7, rd: 254.9, wrRate: 0.2, rdRate: 1.1, vol: 12, rx: 18.6, tx: 90.2, rxRate: 6, txRate: 2 },
-    { name: "blog", stack: "static", cpu: 1, mem: 0.1, memLimit: 0.5, uptime: "14일", restarts: 0, status: "running", spark: walk(12, 24, 1, 1), memSpark: walk(22, 24, 0.1, 0.02), wr: 0, rd: 15.4, wrRate: 0, rdRate: 0.1, vol: 0.4, rx: 2.1, tx: 40.5, rxRate: 1, txRate: 3 },
-    { name: "worker", stack: "node", cpu: 34, mem: 2.9, memLimit: 3, uptime: "3시간", restarts: 3, status: "running", spark: walk(13, 24, 30, 14), memSpark: walk(23, 24, 2.9, 0.3), wr: 108.7, rd: 7.1, wrRate: 4.8, rdRate: 0.3, vol: 38, rx: 0.9, tx: 0.3, rxRate: 0.4, txRate: 0.1 },
-    { name: "postgres", stack: "db", cpu: 4, mem: 0.9, memLimit: 2, uptime: "14일", restarts: 0, status: "running", spark: walk(14, 24, 4, 2), memSpark: walk(24, 24, 0.9, 0.1), wr: 90.3, rd: 18.6, wrRate: 1.6, rdRate: 0.5, vol: 46, rx: 4.2, tx: 3.9, rxRate: 0.8, txRate: 0.7 },
-    { name: "edge", stack: "caddy", cpu: 2, mem: 0.2, memLimit: 0.5, uptime: "14일", restarts: 0, status: "running", spark: walk(15, 24, 2, 1), memSpark: walk(25, 24, 0.2, 0.03), wr: 0.7, rd: 140.8, wrRate: 0, rdRate: 0.2, vol: 0.1, rx: 176, tx: 142, rxRate: 12, txRate: 11 },
+    { name: "api", ioSpark: walk(31, 24, 1.3, 0.65), netSpark: walk(41, 24, 8, 4.0), stack: "dockerfile", cpu: 12, mem: 1.4, memLimit: 2, uptime: "6일 4시간", restarts: 0, status: "running", spark: walk(11, 24, 12, 6), memSpark: walk(21, 24, 1.4, 0.2), wr: 3.7, rd: 254.9, wrRate: 0.2, rdRate: 1.1, vol: 12, rx: 18.6, tx: 90.2, rxRate: 6, txRate: 2 },
+    { name: "blog", ioSpark: walk(32, 24, 0.1, 0.1), netSpark: walk(42, 24, 4, 2.0), stack: "static", cpu: 1, mem: 0.1, memLimit: 0.5, uptime: "14일", restarts: 0, status: "running", spark: walk(12, 24, 1, 1), memSpark: walk(22, 24, 0.1, 0.02), wr: 0, rd: 15.4, wrRate: 0, rdRate: 0.1, vol: 0.4, rx: 2.1, tx: 40.5, rxRate: 1, txRate: 3 },
+    { name: "worker", ioSpark: walk(33, 24, 5.1, 2.55), netSpark: walk(43, 24, 0.5, 0.2), stack: "node", cpu: 34, mem: 2.9, memLimit: 3, uptime: "3시간", restarts: 3, status: "running", spark: walk(13, 24, 30, 14), memSpark: walk(23, 24, 2.9, 0.3), wr: 108.7, rd: 7.1, wrRate: 4.8, rdRate: 0.3, vol: 38, rx: 0.9, tx: 0.3, rxRate: 0.4, txRate: 0.1 },
+    { name: "postgres", ioSpark: walk(34, 24, 2.1, 1.05), netSpark: walk(44, 24, 1.5, 0.75), stack: "db", cpu: 4, mem: 0.9, memLimit: 2, uptime: "14일", restarts: 0, status: "running", spark: walk(14, 24, 4, 2), memSpark: walk(24, 24, 0.9, 0.1), wr: 90.3, rd: 18.6, wrRate: 1.6, rdRate: 0.5, vol: 46, rx: 4.2, tx: 3.9, rxRate: 0.8, txRate: 0.7 },
+    { name: "edge", ioSpark: walk(35, 24, 0.2, 0.1), netSpark: walk(45, 24, 23, 11.5), stack: "caddy", cpu: 2, mem: 0.2, memLimit: 0.5, uptime: "14일", restarts: 0, status: "running", spark: walk(15, 24, 2, 1), memSpark: walk(25, 24, 0.2, 0.03), wr: 0.7, rd: 140.8, wrRate: 0, rdRate: 0.2, vol: 0.1, rx: 176, tx: 142, rxRate: 12, txRate: 11 },
   ],
   tick: 0,
 });
@@ -22,7 +22,7 @@ const step = (m: Metrics): Metrics => {
   const r = rnd(1000 + m.tick);
   const nudge = (v: number, amp: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, Math.round((v + (r() - 0.5) * amp) * 10) / 10));
   const push = (a: number[], v: number) => [...a.slice(1), v];
-  const ct = m.ct.map((c) => { const cpu = nudge(c.cpu, c.cpu > 20 ? 10 : 3, 0, 100); const mem = nudge(c.mem, 0.08, 0.05, c.memLimit); const wrRate = nudge(c.wrRate, c.wrRate > 1 ? 2 : 0.2, 0, 20), rdRate = nudge(c.rdRate, 0.4, 0, 10), rxRate = nudge(c.rxRate, c.rxRate > 5 ? 4 : 0.6, 0, 30), txRate = nudge(c.txRate, c.txRate > 5 ? 4 : 0.4, 0, 30); return { ...c, cpu, mem, spark: push(c.spark, cpu), memSpark: push(c.memSpark, mem), wrRate, rdRate, rxRate, txRate, wr: Math.round((c.wr + wrRate / 1024) * 10) / 10, rd: Math.round((c.rd + rdRate / 1024) * 10) / 10, rx: Math.round((c.rx + rxRate / 8 / 1024) * 100) / 100, tx: Math.round((c.tx + txRate / 8 / 1024) * 100) / 100 }; });
+  const ct = m.ct.map((c) => { const cpu = nudge(c.cpu, c.cpu > 20 ? 10 : 3, 0, 100); const mem = nudge(c.mem, 0.08, 0.05, c.memLimit); const wrRate = nudge(c.wrRate, c.wrRate > 1 ? 2 : 0.2, 0, 20), rdRate = nudge(c.rdRate, 0.4, 0, 10), rxRate = nudge(c.rxRate, c.rxRate > 5 ? 4 : 0.6, 0, 30), txRate = nudge(c.txRate, c.txRate > 5 ? 4 : 0.4, 0, 30); return { ...c, cpu, mem, spark: push(c.spark, cpu), memSpark: push(c.memSpark, mem), ioSpark: push(c.ioSpark, Math.round((wrRate + rdRate) * 10) / 10), netSpark: push(c.netSpark, Math.round((rxRate + txRate) * 10) / 10), wrRate, rdRate, rxRate, txRate, wr: Math.round((c.wr + wrRate / 1024) * 10) / 10, rd: Math.round((c.rd + rdRate / 1024) * 10) / 10, rx: Math.round((c.rx + rxRate / 8 / 1024) * 100) / 100, tx: Math.round((c.tx + txRate / 8 / 1024) * 100) / 100 }; });
   const cpu = Math.min(100, Math.round(ct.reduce((a, c) => a + c.cpu, 0) * 0.4 + 4 + r() * 3));
   const mem = Math.round(ct.reduce((a, c) => a + c.mem, 0) * 10) / 10 + 0.6;
   const last = (a: number[]) => a[a.length - 1];
@@ -54,22 +54,33 @@ const RES: { id: Res; label: string; unit: (c: Ct) => string; pct: (c: Ct) => nu
   { id: "disk", label: "디스크", unit: (c) => `${(c.wrRate + c.rdRate).toFixed(1)} MB/s`, pct: (c) => Math.min(100, (c.wrRate + c.rdRate) * 5), tone: () => "accent" },
   { id: "net", label: "네트워크", unit: (c) => `${(c.rxRate + c.txRate).toFixed(1)} Mb/s`, pct: (c) => Math.min(100, (c.rxRate + c.txRate) * 2), tone: () => "good" },
 ];
+const CHART = ["var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"]; // 컨테이너 색 넷 — 전체(accent)와 겹치지 않게 chart-1 은 안 쓴다
+const colorOfCt = (m: Metrics, name: string) => CHART[m.ct.findIndex((c) => c.name === name) % CHART.length];
+const sparkOf = (c: Ct, id: Res) => ({ cpu: c.spark, mem: c.memSpark, disk: c.ioSpark, net: c.netSpark }[id]);
+const SplitCtx = createContext(false);
 const hostOf = (H: Metrics["h"], id: Res) => ({
-  cpu: { value: `${Math.round(last(H.cpu))}%`, sub: "8 코어", series: [{ name: "호스트", points: H.cpu, tone: "accent" as const }], max: 100, fmt: (v: number) => `${v}%` },
-  mem: { value: `${last(H.mem).toFixed(1)} GB`, sub: "16 GB 중", series: [{ name: "사용", points: H.mem, tone: "info" as const }], max: 16, fmt: (v: number) => `${v}G` },
-  disk: { value: `${Math.round(last(H.disk))} GB`, sub: "512 GB 중", series: [{ name: "읽기", points: H.net_out.map((v) => v / 2), tone: "info" as const }, { name: "쓰기", points: H.net_in.map((v) => v / 3), tone: "warn" as const }], max: undefined, fmt: (v: number) => `${v}M` },
-  net: { value: `↓${Math.round(last(H.net_in))} ↑${Math.round(last(H.net_out))}`, sub: "Mb/s", series: [{ name: "받음", points: H.net_in, tone: "good" as const }, { name: "보냄", points: H.net_out, tone: "accent" as const }], max: undefined, fmt: (v: number) => `${v}` },
+  cpu: { value: `${Math.round(last(H.cpu))}%`, sub: "8 코어", series: [{ name: "호스트", points: H.cpu, tone: "accent" as const }], total: H.cpu, max: 100, fmt: (v: number) => `${v}%` },
+  mem: { value: `${last(H.mem).toFixed(1)} GB`, sub: "16 GB 중", series: [{ name: "사용", points: H.mem, tone: "info" as const }], total: H.mem, max: 16, fmt: (v: number) => `${v}G` },
+  disk: { value: `${Math.round(last(H.disk))} GB`, sub: "512 GB 중", series: [{ name: "읽기", points: H.net_out.map((v) => v / 2), tone: "info" as const }, { name: "쓰기", points: H.net_in.map((v) => v / 3), tone: "warn" as const }], total: H.net_out.map((v, i) => Math.round((v / 2 + H.net_in[i] / 3) * 10) / 10), max: undefined, fmt: (v: number) => `${v}M` },
+  net: { value: `↓${Math.round(last(H.net_in))} ↑${Math.round(last(H.net_out))}`, sub: "Mb/s", series: [{ name: "받음", points: H.net_in, tone: "good" as const }, { name: "보냄", points: H.net_out, tone: "accent" as const }], total: H.net_in.map((v, i) => Math.round((v + H.net_out[i]) * 10) / 10), max: undefined, fmt: (v: number) => `${v}` },
 }[id]);
 const topOf = (CT: Ct[], r: (typeof RES)[number], n = 3) => [...CT].sort((a, b) => r.pct(b) - r.pct(a)).slice(0, n);
 
 /** 리소스 띠 — 요약 한 줄: 이름·값 · 시계열 · 상위 3. 네 변형이 같은 띠를 쓴다. */
 function Band({ m, r, dense }: { m: Metrics; r: (typeof RES)[number]; dense?: boolean }) {
   const h = hostOf(m.h, r.id);
+  const split = useContext(SplitCtx);
+  const top = topOf(m.ct, r);
+  // 컨테이너별 — 합계는 accent 면으로 남기고, 상위 3 은 각자 색의 선으로 얹는다(면 없음). 오른쪽 목록의 점이 같은 색이라 선을 찾을 수 있다.
+  const n = h.series[0].points.length;
+  const series = split
+    ? [{ name: "전체", points: h.total, tone: "accent" as const }, ...top.map((c) => ({ name: c.name, points: sparkOf(c, r.id).concat(sparkOf(c, r.id)).slice(-n), color: colorOfCt(m, c.name), fill: false }))]
+    : h.series;
   return (
     <div className={cn("grid items-center gap-8", dense ? "grid-cols-[140px_1fr_240px]" : "grid-cols-[160px_1fr_260px]")}>
       <div><p className="text-body text-mute">{r.label}</p><p className="mt-1 text-title tabular-nums text-text">{h.value}</p><p className="text-caption text-mute">{h.sub}</p></div>
-      <div className="ps-8"><AreaChart series={h.series} max={h.max} height={64} format={h.fmt} /></div>
-      <div className="space-y-1.5">{topOf(m.ct, r).map((c) => <div key={c.name} className="grid grid-cols-[80px_1fr_80px] items-center gap-2"><span className="truncate text-caption text-text">{c.name}</span><Progress value={r.pct(c)} tone={r.tone(c)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{r.unit(c)}</span></div>)}</div>
+      <div className="ps-8"><AreaChart series={series} max={h.max} height={64} format={h.fmt} /></div>
+      <div className="space-y-1.5">{top.map((c) => <div key={c.name} className="grid grid-cols-[80px_1fr_80px] items-center gap-2"><span className="flex items-center gap-2 truncate text-caption text-text">{split && <span className="size-2 shrink-0 rounded-full" style={{ background: colorOfCt(m, c.name) }} />}{c.name}</span><Progress value={r.pct(c)} tone={r.tone(c)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{r.unit(c)}</span></div>)}</div>
     </div>
   );
 }
@@ -101,6 +112,11 @@ function Detail({ m, r }: { m: Metrics; r: (typeof RES)[number] }) {
       <div><p className="mb-3 text-caption text-mute">컨테이너 전체 · {r.label} 순</p><div className="divide-y divide-line">{rows.map((c) => <div key={c.name} className="grid grid-cols-[200px_1fr_1fr_140px] items-center gap-4 py-2 text-body whitespace-nowrap [&>*:not(:first-child)]:justify-self-end"><ListRow lead={<Tile size="sm">{c.name[0].toUpperCase()}</Tile>} title={c.name} sub={c.stack} />{cols[r.id](c).map((x, i) => <div key={i} className="w-full text-end">{x}</div>)}</div>)}</div></div>
     </div>
   );
+}
+
+/** V2 — 띠 넷만. 토글 "컨테이너별" 이 켜지면 각 띠의 그래프에 상위 3 컨테이너가 색 선으로 얹힌다. */
+function V2({ m }: { m: Metrics }) {
+  return <Card className="divide-y divide-line p-0 [&>*]:px-6 [&>*]:py-5">{RES.map((r) => <div key={r.id}><Band m={m} r={r} /></div>)}</Card>;
 }
 
 /** V2-a — 행 펼침. 띠를 누르면 그 자리에서 세부가 펼쳐진다(unfold). 한 번에 여러 개 열 수 있다. */
@@ -145,11 +161,14 @@ function V2d({ m }: { m: Metrics }) {
 
 export function Lab() {
   const [live, setLive] = useState(true);
+  const [split, setSplit] = useState(true);
   const m = useLive(live);
   return (
+    <SplitCtx.Provider value={split}>
     <AppShell>
-      <PageHeading crumbs={[{ label: "캔버스", href: "#" }, { label: "Lab" }]} title="리소스" meta={<><IconText icon="insight">가로 띠 4단 + 세부 드러내기 — 경우의 수 넷</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `실시간 흉내 · 1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<Switch checked={live} onCheckedChange={setLive} label="실시간" boxed />} />
+      <PageHeading crumbs={[{ label: "캔버스", href: "#" }, { label: "Lab" }]} title="리소스" meta={<><IconText icon="insight">가로 띠 4단 + 세부 드러내기 — 경우의 수 넷</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `실시간 흉내 · 1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<><Switch checked={split} onCheckedChange={setSplit} label="컨테이너별" boxed /><Switch checked={live} onCheckedChange={setLive} label="실시간" boxed /></>} />
       <div className="mt-8">
+        <Option id="v2" title="V2 · 가로 띠 4단 + 컨테이너별 토글" from="합계는 accent 면, 상위 3 은 각자 색 선(면 없음) · 오른쪽 목록의 점이 같은 색" fit="누가 올렸나를 그래프 위에서 바로. 토글을 끄면 합계만"><V2 m={m} /></Option>
         <Option id="v2a" title="V2-a · 행 펼침" from="아코디언 — 띠가 곧 트리거" fit="궁금한 리소스만 그 자리에서. 여러 개 동시에 열어 비교"><V2a m={m} /></Option>
         <Option id="v2b" title="V2-b · 오른쪽 서랍" from="Sheet — 요약은 뒤에 남는다" fit="요약을 잃지 않고 깊이 볼 때. 서랍 안에서 범위·목록"><V2b m={m} /></Option>
         <Option id="v2c" title="V2-c · 전체 스위치" from="'자세히' 하나로 모두 펼침 — 두 상태" fit="클릭 없이 훑고 싶을 때. 넷을 한 번에 비교"><V2c m={m} /></Option>
@@ -157,5 +176,6 @@ export function Lab() {
       </div>
       <Container className="mt-16 px-0"><Card title="추천"><KeyValue items={[{ label: "선택", value: "V2-d — 띠 넷은 늘 보이고 세부는 아래 하나. 활성 상태 보기와 같은 손맛, 레이아웃이 흔들리지 않는다" }, { label: "차선", value: "V2-a — 비교가 필요하면 둘을 동시에 펼친다. 대신 화면이 길어진다" }, { label: "새 API", value: "컨테이너별 디스크 r/w·네트워크 rx/tx(docker stats) · 가동시간·재시작 · 시계열 샘플" }]} /></Card></Container>
     </AppShell>
+    </SplitCtx.Provider>
   );
 }
