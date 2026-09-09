@@ -9,7 +9,7 @@ export function Meter({ label, total, unit = "", parts, className }: { label?: R
   const used = parts.reduce((a, p) => a + p.value, 0);
   return (
     <Base.Root value={used} max={total} className={cn("block", className)}>
-      <div className="mb-2 flex items-center justify-between text-body"><Base.Label className="text-mute">{label}</Base.Label><span className="font-mono tabular-nums text-text">{used}{unit} / {total}{unit}</span></div>
+      <div className="mb-2 flex items-center justify-between text-body"><Base.Label className="text-mute">{label}</Base.Label><span className="font-mono tabular-nums text-text">{Math.round(used * 10) / 10}{unit} / {total}{unit}</span></div>
       <Base.Track className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-card-3">
         {parts.map((p) => <Base.Indicator key={p.label} className={cn("h-full grow", FILL[p.tone])} style={{ width: `${(p.value / total) * 100}%` }} />)}
       </Base.Track>

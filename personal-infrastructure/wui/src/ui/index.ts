@@ -24,6 +24,7 @@ export { Callout } from "./1-atoms/callout";
 export { Sparkline } from "./1-atoms/sparkline";
 export { Donut } from "./1-atoms/donut";
 export { Gauge } from "./1-atoms/gauge";
+export { AreaChart, type Series } from "./1-atoms/area-chart";
 export { Tooltip, TooltipProvider } from "./1-atoms/tooltip";
 export { Link } from "./1-atoms/link";
 export { Container } from "./1-atoms/container";
@@ -75,6 +76,7 @@ export { NavList } from "./2-molecules/nav-list";
 export { SectionHeading } from "./2-molecules/section-heading";
 export { List } from "./2-molecules/list";
 export { Calendar } from "./2-molecules/calendar";
+export { RingGauge } from "./2-molecules/ring-gauge";
 // 3 유기체
 export { TopBar } from "./3-organisms/top-bar";
 export { TopProjects } from "./3-organisms/top-projects";
