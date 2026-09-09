@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { toneOf, Container, InputGroup, FormRow, FormActions, ActionPanel, NavList, SectionHeading, List, Calendar, PageHeading, SignInCard, DetailScreen, SettingsScreen, Link, ButtonGroup, AvatarGroup, Meter, Tracker, Steps, Timeline, KeyValue, CopyField, RadioCards, Fieldset, Sheet, Command, Analytics, EdgeRequests, RecentDeploys, TopProjects, Spinner, Icon, ICONS, type IconName, IconButton, Dot, Track, SEG, ITEM, IconText, Accordion, Avatar, Badge, Breadcrumb, Button, Callout, Card, Checkbox, Chip, Code, Combobox, ConfirmDialog, Dialog, Donut, DotMatrix, EmptyState, Field, FilterTabs, Gauge, InlineCode, Input, Kbd, ListRow, LogViewer, Menu, MenuItem, MenuLabel, MenuSeparator, Mono, Notice, NumberField, Pagination, Popover, Progress, RadioGroup, SearchInput, Select, Separator, Skeleton, Slider, Sparkline, Stat, StatTrend, StatusDot, Switch, Tabs, Textarea, Tile, ToastProvider, ToggleGroup, Toolbar, Tooltip, TooltipProvider, TopBar, useToast} from "@/ui";
+import { toneOf, Container, InputGroup, FormRow, FormActions, ActionPanel, NavList, SectionHeading, List, Calendar, PageHeading, SignInCard, DetailScreen, SettingsScreen, Link, ButtonGroup, AvatarGroup, Meter, Tracker, Steps, Timeline, KeyValue, CopyField, RadioCards, Fieldset, Sheet, Command, Analytics, EdgeRequests, RecentDeploys, ResourceBand, ResourceBands, StorageCard, TopProjects, Spinner, Icon, ICONS, type IconName, IconButton, Dot, Track, SEG, ITEM, IconText, Accordion, Avatar, Badge, Breadcrumb, Button, Callout, Card, Checkbox, Chip, Code, Combobox, ConfirmDialog, Dialog, Donut, DotMatrix, EmptyState, Field, FilterTabs, Gauge, InlineCode, Input, Kbd, ListRow, LogViewer, Menu, MenuItem, MenuLabel, MenuSeparator, Mono, Notice, NumberField, Pagination, Popover, Progress, RadioGroup, SearchInput, Select, Separator, Skeleton, Slider, Sparkline, Stat, StatTrend, StatusDot, Switch, Tabs, Textarea, Tile, ToastProvider, ToggleGroup, Toolbar, Tooltip, TooltipProvider, TopBar, useToast} from "@/ui";
 
 // Figma 식 캔버스 — 상자 없이 원자 요소를 세로 한 줄로. 다크가 기본, 라이트 토글. 줌·레이어 목록.
 type Row = { id: string; name: string; env: string; status: "running" | "deploying" | "failed" | "created"; port: number | null; commit: string; pct: number };
@@ -208,6 +208,10 @@ const ITEMS: Item[] = [
   { id: "o-top", label: "TopProjects", render: () => <div className="w-[340px]"><TopProjects /></div> },
   { id: "o-edge", label: "EdgeRequests", render: () => <EdgeRequests /> },
   { id: "o-deploys", label: "RecentDeploys", render: () => <RecentDeploys /> },
+  // 리소스 — 확정 규격(2026-09-09)
+  { id: "o-band", label: "ResourceBand / 기본 · 토글", wide: true, render: () => <div className="space-y-6"><ResourceBand label="CPU" value="34%" points={BAND_TOTAL} parts={BAND_PARTS} pct={34} max={100} format={(v) => `${v}%`} /><ResourceBand label="Disk I/O" value="11.1 MB/s" points={wave(3, 60, 11, 5)} parts={[{ name: "worker", value: "4.7 MB/s", share: 22, points: wave(6, 60, 5, 3) }, { name: "postgres", value: "3.9 MB/s", share: 18, points: wave(11, 60, 4, 2) }]} pct={55} format={(v) => `${v}M`} modes={[{ value: "sum", label: "Total" }, { value: "a", label: "Read" }, { value: "b", label: "Write" }]} /></div> },
+  { id: "o-bands", label: "ResourceBands / 카드", wide: true, render: () => <div><ResourceBands><div><ResourceBand label="CPU" value="34%" points={BAND_TOTAL} parts={BAND_PARTS} pct={34} max={100} format={(v) => `${v}%`} /></div><div><ResourceBand label="Memory" value="3.5 GB" points={wave(7, 60, 3.5, 0.4)} parts={[{ name: "api", value: "1.6 GB", share: 10 }, { name: "postgres", value: "0.9 GB", share: 6 }]} pct={22} max={16} format={(v) => `${v}G`} /></div></ResourceBands></div> },
+  { id: "o-storage", label: "StorageCard / 디스크 · SSD", wide: true, render: () => <div className="grid gap-5 md:grid-cols-2"><StorageCard title="Internal disk" mount="/" total={512} parts={[{ label: "Images", value: 84 }, { label: "System", value: 24 }, { label: "Logs", value: 6.3 }]} rowsLabel="Top log writers" rows={[{ name: "worker", value: 3.1 }, { name: "api", value: 1.8 }, { name: "edge", value: 0.9 }]} /><StorageCard title="External SSD" mount="/mnt/ssd" total={2000} parts={[{ label: "Other", value: 410 }, { label: "Backups", value: 132 }, { label: "Volumes", value: 96 }]} rowsLabel="Largest volumes" rows={[{ name: "postgres", value: 46 }, { name: "worker", value: 38 }, { name: "api", value: 12 }]} /></div> },
   // ── 4 템플릿
   // ── 4 템플릿
   // 분석 대시보드
@@ -239,10 +243,20 @@ const SECTIONS: RowDef[] = [
   { title: "3 유기체", cells: [
     { title: "셸", items: ["topbar", "page-heading", "sign-in"] },
     { title: "카드", items: ["o-top", "o-edge", "o-deploys"] },
+    { title: "리소스", items: ["o-band", "o-bands", "o-storage"] },
   ] },
   { title: "4 템플릿", cells: [
     { title: "화면 1280 × 800 · 50%", items: ["x-analytics", "x-detail", "x-settings"] },
   ] },
+];
+
+// 리소스 유기체 캔버스 샘플 — 고정 시계열(캔버스는 움직이지 않는다)
+const wave = (seed: number, n: number, base: number, amp: number) => Array.from({ length: n }, (_, i) => Math.max(0, Math.round((base + Math.sin((i + seed) / 9) * amp + Math.sin((i + seed) / 3) * amp * 0.3) * 10) / 10));
+const BAND_TOTAL = wave(0, 60, 34, 12);
+const BAND_PARTS = [
+  { name: "worker", value: "18%", share: 18, points: wave(4, 60, 18, 8) },
+  { name: "api", value: "11%", share: 11, points: wave(9, 60, 11, 4) },
+  { name: "postgres", value: "4%", share: 4, points: wave(15, 60, 4, 2) },
 ];
 
 const ZOOM_KEY = "pi-canvas-zoom";
