@@ -26,7 +26,7 @@ const step = (m: Metrics): Metrics => {
   const cpu = Math.min(100, Math.round(ct.reduce((a, c) => a + c.cpu, 0) * 0.4 + 4 + r() * 3));
   const mem = Math.round(ct.reduce((a, c) => a + c.mem, 0) * 10) / 10 + 0.6;
   const last = (a: number[]) => a[a.length - 1];
-  return { tick: m.tick + 1, ct, h: { cpu: push(m.h.cpu, cpu), mem: push(m.h.mem, Math.round(mem * 10) / 10), disk: push(m.h.disk, nudge(last(m.h.disk), 0.2, 200, 512)), net_in: push(m.h.net_in, nudge(last(m.h.net_in), 6, 0, 40)), net_out: push(m.h.net_out, nudge(last(m.h.net_out), 2, 0, 20)) } };
+  return { tick: m.tick + 1, ct, h: { cpu: push(m.h.cpu, cpu), mem: push(m.h.mem, Math.round(mem * 10) / 10), disk: push(m.h.disk, nudge(last(m.h.disk), 0.2, 200, 512)), net_in: push(m.h.net_in, nudge(last(m.h.net_in), 6, 1, 40)), net_out: push(m.h.net_out, nudge(last(m.h.net_out), 2, 1, 20)) } };
 };
 function useLive(on: boolean) {
   const [m, setM] = useState<Metrics>(seed);
@@ -92,7 +92,7 @@ function OptionB({ m }: { m: Metrics }) {
         <Card title="메모리" subtitle="16 GB 중"><Meter total={16} unit="G" parts={[{ label: "api", value: CT[0].mem, tone: "info" }, { label: "worker", value: CT[2].mem, tone: "progress" }, { label: "postgres", value: CT[3].mem, tone: "running" }, { label: "그 외", value: Math.round((CT[1].mem + CT[4].mem) * 10) / 10, tone: "idle" }]} /></Card>
       </div>
       <List title="컨테이너">
-        {CT.map((c) => <ListRow key={c.name} lead={<Tile size="sm">{c.name[0].toUpperCase()}</Tile>} title={c.name} sub={c.stack} value={<span className="font-mono text-body">{c.cpu}% · {c.mem} GB</span>} end={<StatusDot tone={c.restarts ? "progress" : "running"} muted>{c.restarts ? `재시작 ${c.restarts}` : c.uptime}</StatusDot>} />)}
+        {CT.map((c) => <ListRow key={c.name} lead={<Tile size="sm">{c.name[0].toUpperCase()}</Tile>} title={c.name} sub={c.stack} value={<span className="font-mono text-body">{Math.round(c.cpu)}% · {c.mem.toFixed(1)} GB</span>} end={<StatusDot tone={c.restarts ? "progress" : "running"} muted>{c.restarts ? `재시작 ${c.restarts}` : c.uptime}</StatusDot>} />)}
       </List>
     </div>
   );
@@ -134,7 +134,7 @@ function OptionD({ m }: { m: Metrics }) {
           <div key={c.name} className="grid grid-cols-[180px_1fr_120px_140px_120px_100px] items-center gap-4">
             <ListRow lead={<Tile size="sm">{c.name[0].toUpperCase()}</Tile>} title={c.name} sub={c.stack} />
             <Sparkline fluid points={c.spark} tone={c.cpu > 30 ? "warn" : "accent"} height={32} className="block w-full" />
-            <span className="font-mono text-body tabular-nums text-text">{c.cpu}%</span>
+            <span className="font-mono text-body tabular-nums text-text">{Math.round(c.cpu)}%</span>
             <div><span className="font-mono text-body tabular-nums text-text">{c.mem} / {c.memLimit} GB</span><Progress value={(c.mem / c.memLimit) * 100} tone={c.mem / c.memLimit > 0.9 ? "bad" : "good"} className="mt-1 [&>div:first-child]:hidden" /></div>
             <IconText icon="clock">{c.uptime}</IconText>
             {c.restarts ? <Badge size="sm" tone="progress">재시작 {c.restarts}</Badge> : <StatusDot tone="running" muted>안정</StatusDot>}
