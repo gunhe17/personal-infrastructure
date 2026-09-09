@@ -146,12 +146,12 @@ function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?:
           {D && <FilterTabs size="sm" value={dir} onValueChange={setDir} items={[{ value: "sum", label: "합" }, { value: "a", label: D.a.label }, { value: "b", label: D.b.label }]} />}
         </div>
         {/* 메인 그래프 — 우측 끝 선 높이에 현재값 */}
-        <div className="mt-3"><AreaChart series={series} max={h.max} height={z.chart} format={h.fmt} formatMark={r.fmt} legend={false} annotate={g.marks} nowLabel={h.value} nowClass={z.value} nowColor={NOW} nowWidth={z.now} /></div>
+        <div className="mt-4"><AreaChart series={series} max={h.max} height={z.chart} format={h.fmt} formatMark={r.fmt} legend={false} annotate={g.marks} nowLabel={h.value} nowClass={z.value} nowColor={NOW} nowWidth={z.now} /></div>
       </div>
       {/* 오른쪽 — 가로 쌓은 띠 + 상위 3 */}
       <div>
         <div aria-hidden="true" className="hidden h-7 lg:block" />
-        <div className="flex h-2 gap-0.5 lg:mt-3 overflow-hidden rounded-full bg-card-3">
+        <div className="flex h-2 gap-0.5 lg:mt-4 overflow-hidden rounded-full bg-card-3">
           {split && top.map((c) => <span key={c.name} className="h-full rounded-full move" style={{ width: `${share(c)}%`, background: color(c.name) }} />)}
           <span className="h-full rounded-full move" style={{ width: `${split ? rest : h.pct}%`, background: NOW, opacity: split ? 0.4 : 1 }} />
         </div>

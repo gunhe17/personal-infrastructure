@@ -104,7 +104,7 @@ Geist(본문·숫자) · Geist Mono(기술 값) · Pretendard 한글 폴백. 굵
 - **Input / Textarea / Field / SearchInput** — card-2, 12px, 테두리 없음, focus accent 링, 오류는 bad 링 + caption. 검색은 pill.
 - **Select** — 입력과 같은 모양, 팝업은 메뉴와 같은 16px card-2 + line 링, 체크는 accent.
 - **Switch** — 44×24, 손잡이 accent. `boxed` 면 card-2 pill 안에 라벨과 함께(원본 "Insights").
-- **Tabs / FilterTabs / ToggleGroup** — `SlideTrack`(card-2 트랙 + 활성 칸을 따라 미끄러지는 accent 핀) 위의 SEG. 활성은 `aria-pressed`/`aria-selected`/`data-pressed`/`data-active`(Base Tabs)/`data-selected` 로 찾는다. Tabs 의 선택 글자색도 `data-[active]` — `data-selected` 로 두면 mute 글자가 accent 위에 남는다(2026-09-08 사용자 지적). 밑줄 탭은 없다. **FilterTabs `size="sm"`**(2026-09-09) 은 `SEG_SM` — 트랙 안 20, 바깥 28, 11/16, 칸은 `flex-1` 같은 폭. 제목 옆에 붙는 로컬 토글용이라 제목보다 작다. 카드 안 값 옆의 합·읽기·쓰기 같은 로컬 토글에.
+- **Tabs / FilterTabs / ToggleGroup** — `SlideTrack`(card-2 트랙 + 활성 칸을 따라 미끄러지는 accent 핀) 위의 SEG. 활성은 `aria-pressed`/`aria-selected`/`data-pressed`/`data-active`(Base Tabs)/`data-selected` 로 찾는다. Tabs 의 선택 글자색도 `data-[active]` — `data-selected` 로 두면 mute 글자가 accent 위에 남는다(2026-09-08 사용자 지적). 밑줄 탭은 없다. **FilterTabs `size="sm"`**(2026-09-09) 은 `SEG_SM` — 트랙 안 16, 바깥 24, 11/16, 칸은 `flex-1` 같은 폭. 제목 옆에 붙는 로컬 토글용이라 제목보다 작다. 카드 안 값 옆의 합·읽기·쓰기 같은 로컬 토글에.
 - **Dot / StatusDot / Badge / Tile** — 점 8px(progress 맥동), StatusDot = Dot + body; 배지 md 36 · sm 32(caption) 8px 솔리드(idle 만 card-3); 타일은 **단색(accent)** md 48/10px · sm 36/8px, 흰 이니셜 또는 아이콘.
 - **Card** — 16px card, 안쪽 24, 제목 22(아이콘 있으면 26) + 부제 mute, 우측 액션. 모든 표면(Stat·StatTrend·Accordion·LogViewer·Dialog·TopBar)이 이걸 쓴다. `flush` 없음.
 - **Stat** — card 안 caption → 54px display → note + delta(info).
