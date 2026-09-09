@@ -60,14 +60,13 @@ function V1() {
               <DevName d={d} />
               <span className="min-w-0">
                 <span className="mb-2 flex items-baseline justify-between gap-3 text-caption">
-                  <span className="font-mono tabular-nums" style={{ color: tone(d) }}>{GB(used(d))} used <span className="text-mute">· {Math.round(pct)}%</span></span>
+                  <span className="font-mono tabular-nums" style={{ color: tone(d) }}>{GB(used(d))} used</span>
                   <span className="font-mono tabular-nums text-mute">{GB(d.total)}</span>
                 </span>
                 <Progress value={pct} color={tone(d)} className="[&>div:first-child]:hidden" />
               </span>
               <span className="justify-self-end text-end">
                 <Sparkline fluid points={d.hist} tone={pct > 60 ? "warn" : "accent"} height={32} className="block w-[160px]" />
-                <span className="mt-1 block font-mono text-caption tabular-nums text-mute">+{growth(d.hist).toFixed(1)} GB/day · 30d</span>
               </span>
             </div>
           );
@@ -176,7 +175,7 @@ export function StorageLab() {
     <AppShell>
       <PageHeading crumbs={[{ label: "Home", href: "#" }, { label: "Lab" }, { label: "Devices" }]} title="Devices" meta={<><IconText icon="volume">How to show usage and trend in one row</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" />fake data · internal disk is 80% full</span></>} />
       <div className="mt-8">
-        <Option id="v1" title="V1 · Labels above the bar" from="막대 위 왼쪽에 사용량·%, 오른쪽에 총량. 오른쪽 열은 30일 스파크라인" fit="지금 것. 값과 흐름이 각자 자리를 가진다" ><V1 /></Option>
+        <Option id="v1" title="V1 · Labels above the bar" from="막대 위 왼쪽에 사용량, 오른쪽에 총량. 오른쪽 열은 30일 스파크라인" fit="값과 흐름이 각자 자리를 가진다. 숫자는 둘뿐" ><V1 /></Option>
         <Option id="v2" title="V2 · Values inside the bar" from="라벨 줄을 없애고 값을 24px 막대 안으로. 트렌드는 작게" fit="행이 가장 낮다. 장치가 많을 때 목록이 짧아진다"><V2 /></Option>
         <Option id="v3" title="V3 · Chart-led row" from="오른쪽을 면적 차트로 키우고 총량은 점선, 끝에 현재값. 막대는 왼쪽 보조" fit="흐름이 주인공. 막대는 지금 비율만 거든다"><V3 /></Option>
         <Option id="v4" title="V4 · One picture — no bar" from="막대를 없애고 그래프만. 상한 점선까지의 거리가 곧 여유" fit="한 그림으로 끝난다. 대신 정확한 %는 안 보인다"><V4 /></Option>
