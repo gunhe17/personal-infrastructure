@@ -104,21 +104,21 @@ const hostOf = (H: Metrics["h"], id: "cpu" | "mem") => ({
   mem: { value: `${last(H.mem).toFixed(1)} GB`, sub: "16 GB 중", series: [{ name: "사용", points: H.mem, tone: "info" as const }], total: H.mem, max: 16, pct: (last(H.mem) / 16) * 100, tv: `${last(H.mem).toFixed(1)} GB`, fmt: (v: number) => `${v}G` },
 }[id]);
 
-/** 띠 크기 규격 — 이름 → 그래프 → 막대(세로 기둥, 그래프 높이) → 설명(전체·상위 3) 네 열의 간격·여백·글자 한 벌(사용자 요청 2026-09-09 재구성). S1–S5. */
-type Size = { pad: string; gap: string; cols: string; chart: number; bar: string; label: string; value: string; row: string; dot: string; rows: string; head?: boolean };
+/** 띠 크기 규격 — 이름 → 그래프 → 막대(세로 기둥, 그래프 높이) → 설명(값·부연·상위 3) 네 열의 간격·여백·글자 한 벌(사용자 요청 2026-09-09 재구성, 값도 오른쪽). S1–S5. 열 폭은 컨테이너 768 이상에서만, 좁으면 이름이 그래프 위로 올라간다. */
+type Size = { pad: string; gap: string; cols: string; chart: number; bar: string; name: string; value: string; row: string; dot: string; rows: string; head?: boolean };
 const SIZES = {
-  base:  { pad: "px-6 py-5", gap: "gap-8",  cols: "grid-cols-[160px_1fr_auto_220px]", chart: 64, bar: "w-4", label: "text-body",    value: "text-title",               row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
-  tight: { pad: "px-5 py-4", gap: "gap-6",  cols: "grid-cols-[128px_1fr_auto_200px]", chart: 48, bar: "w-3", label: "text-caption", value: "text-body-lg font-medium", row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0" },
-  roomy: { pad: "px-7 py-7", gap: "gap-10", cols: "grid-cols-[176px_1fr_auto_240px]", chart: 88, bar: "w-5", label: "text-body",    value: "text-title-lg",            row: "text-caption",          dot: "size-2",   rows: "space-y-1" },
-  chart: { pad: "px-6 py-5", gap: "gap-6",  cols: "grid-cols-[112px_1fr_auto_184px]", chart: 72, bar: "w-4", label: "text-caption", value: "text-title",               row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
-  head:  { pad: "px-6 py-5", gap: "gap-8",  cols: "grid-cols-[1fr_auto_220px]",       chart: 56, bar: "w-4", label: "text-body",    value: "text-title",               row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5", head: true },
+  base:  { pad: "px-6 py-5", gap: "@3xl:gap-x-8",  cols: "@3xl:grid-cols-[112px_1fr_auto_240px]", chart: 64, bar: "w-4", name: "text-body-lg", value: "text-title",               row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
+  tight: { pad: "px-5 py-4", gap: "@3xl:gap-x-6",  cols: "@3xl:grid-cols-[96px_1fr_auto_216px]",  chart: 48, bar: "w-3", name: "text-body",    value: "text-body-lg font-medium", row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0" },
+  roomy: { pad: "px-7 py-7", gap: "@3xl:gap-x-10", cols: "@3xl:grid-cols-[128px_1fr_auto_264px]", chart: 88, bar: "w-5", name: "text-body-lg", value: "text-title-lg",            row: "text-caption",          dot: "size-2",   rows: "space-y-1" },
+  chart: { pad: "px-6 py-5", gap: "@3xl:gap-x-6",  cols: "@3xl:grid-cols-[88px_1fr_auto_200px]",  chart: 72, bar: "w-4", name: "text-body",    value: "text-title",               row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
+  head:  { pad: "px-6 py-5", gap: "@3xl:gap-x-8",  cols: "@3xl:grid-cols-[1fr_auto_240px]",       chart: 56, bar: "w-4", name: "text-body-lg", value: "text-title",               row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5", head: true },
 } satisfies Record<string, Size>;
 type SizeId = keyof typeof SIZES;
-/** 토글 위치 — value: 이름 열 값 아래 · chart: 그래프 위 오른쪽 · rows: 설명 열 위 · page: 페이지 머리 하나로 두 띠 동시에. */
-type Tog = "value" | "chart" | "rows" | "page";
+/** 토글 위치 — value: 설명 열 값 아래 · chart: 그래프 위 오른쪽 · name: 이름 아래 · page: 페이지 머리 하나로 두 띠 동시에. */
+type Tog = "value" | "chart" | "name" | "page";
 const DirCtx = createContext<{ dir: Dir; setDir: (d: Dir) => void; tog: Tog }>({ dir: "sum", setDir: () => {}, tog: "value" });
 
-/** 리소스 띠 — 요약 한 줄: 이름·값 · 시계열 · 오른쪽 쌓은 띠 + 정렬된 행(전체·상위 3). 오른쪽이 곧 범례다(그래프 아래 범례 없음). 사용자 선택 2026-09-09: V2-3-c. */
+/** 리소스 띠 — 이름 · 시계열 · 세로 막대 · 설명(값·부연·상위 3). 오른쪽이 곧 범례다(그래프 아래 범례 없음). */
 function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?: SizeId }) {
   const z: Size = SIZES[sz];
   const [own, setOwn] = useState<Dir>("sum");
@@ -129,7 +129,7 @@ function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?:
   const split = useContext(SplitCtx);
   const raw = (c: Ct) => (!D || dir === "sum" ? r.raw(c) : (dir === "a" ? D.a : D.b).ct(c)); // 토글 방향의 컨테이너 값
   const top = [...m.ct].sort((a, b) => raw(b) - raw(a)).slice(0, 3);
-  // 컨테이너별 — 합계는 accent 면으로 남기고, 상위 3 은 각자 색의 선으로 얹는다(면 없음). 색은 오른쪽 막대와 같다.
+  // 컨테이너별 — 합계는 accent 면으로 남기고, 상위 3 은 각자 색의 선으로 얹는다(면 없음). 색은 막대·행과 같다.
   const n = h.series[0].points.length;
   const series = split
     ? [{ name: "전체", points: h.total, tone: "accent" as const }, ...top.map((c) => ({ name: c.name, points: sparkOf(c, r.id).concat(sparkOf(c, r.id)).slice(-n), color: colorOfCt(m, c.name), fill: false }))]
@@ -138,9 +138,18 @@ function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?:
   const share = (c: Ct) => (h.pct * raw(c)) / all; // 전체 막대 안에서 이 컨테이너가 차지하는 폭
   const ACC = "var(--accent)";
   const rest = Math.max(0, h.pct - top.reduce((a, c) => a + share(c), 0)); // 상위 3 밖의 나머지 사용량
-  const row = (name: string, color: string, value: string, strong?: boolean) => (
-    <div key={name} className={cn("grid grid-cols-[auto_1fr_auto] items-center gap-2", z.row)}><span className={cn("rounded-full", z.dot)} style={{ background: color }} /><span className={strong ? "text-text" : "text-sub"}>{name}</span><span className={cn("font-mono tabular-nums", strong ? "text-text" : "text-mute")}>{value}</span></div>
+  const toggle = D && <FilterTabs size="sm" value={dir} onValueChange={setDir} items={[{ value: "sum", label: "합" }, { value: "a", label: D.a.label }, { value: "b", label: D.b.label }]} />;
+  const at = (where: Tog) => (g.tog === where ? toggle : null);
+  // 이름
+  const name = (
+    <div className={cn("flex items-center gap-3", !z.head && "@3xl:block")}>
+      <span className={cn("block", z.name, "text-text")}>{r.label}</span>
+      {at("name") && <span className={cn("block", !z.head && "@3xl:mt-2")}>{at("name")}</span>}
+    </div>
   );
+  // 그래프
+  const chart = <div className="ps-8"><AreaChart series={series} max={h.max} height={z.chart} format={h.fmt} legend={!split} /></div>;
+  const graph = at("chart") ? <div className="space-y-2"><div className="flex justify-end">{at("chart")}</div>{chart}</div> : chart;
   // 막대 — 세로 기둥, 그래프와 같은 높이. 아래부터 상위 3 이 각자 색, 나머지 사용량은 accent 옅게. 컨테이너별이 꺼지면 accent 하나.
   const bar = (
     <div className={cn("flex flex-col-reverse gap-0.5 overflow-hidden rounded-[4px] bg-card-3", z.bar)} style={{ height: z.chart }}>
@@ -148,23 +157,29 @@ function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?:
       <span className="w-full rounded-[3px] move" style={{ height: `${split ? rest : h.pct}%`, background: ACC, opacity: split ? 0.35 : 1 }} />
     </div>
   );
-  const toggle = D && <FilterTabs size="sm" value={dir} onValueChange={setDir} items={[{ value: "sum", label: "합" }, { value: "a", label: D.a.label }, { value: "b", label: D.b.label }]} className={g.tog === "value" && !z.head ? "mt-2 w-full" : ""} />;
-  const at = (where: Tog) => (g.tog === where ? toggle : null);
-  // 설명 — 전체 + 상위 3 행. 컨테이너별이 꺼지면 상위 3 의 자기 상한 막대.
+  // 설명 — 값·부연 → (토글) → 상위 3. 컨테이너별이 꺼지면 상위 3 의 자기 상한 막대.
+  const row = (c: Ct) => (
+    <div key={c.name} className={cn("grid grid-cols-[auto_1fr_auto] items-center gap-2", z.row)}><span className={cn("rounded-full", z.dot)} style={{ background: colorOfCt(m, c.name) }} /><span className="text-sub">{c.name}</span><span className="font-mono tabular-nums text-mute">{r.fmt(raw(c))}</span></div>
+  );
   const rows = !split
     ? <div className="space-y-1.5">{top.map((c) => <div key={c.name} className="grid grid-cols-[72px_1fr_72px] items-center gap-2"><span className="truncate text-caption text-text">{c.name}</span><Progress value={r.pct(c)} tone={r.tone(c)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{r.unit(c)}</span></div>)}</div>
-    : <div className={z.rows}>{row("전체", ACC, h.tv, true)}{top.map((c) => row(c.name, colorOfCt(m, c.name), r.fmt(raw(c))))}</div>;
-  const desc = at("rows") ? <div className="space-y-2">{at("rows")}{rows}</div> : rows;
-  const head = z.head
-    ? <div className="flex items-baseline gap-3"><span className={cn(z.label, "text-mute")}>{r.label}</span><span className={cn(z.value, "tabular-nums text-text")}>{h.value}</span><span className="text-caption text-mute">{h.sub}</span>{at("value")}</div>
-    : <div><p className={cn(z.label, "text-mute")}>{r.label}</p><p className={cn("mt-1 tabular-nums text-text", z.value)}>{h.value}</p>{at("value") ?? <p className="text-caption text-mute">{h.sub}</p>}</div>;
-  const chart = <div className="ps-8"><AreaChart series={series} max={h.max} height={z.chart} format={h.fmt} legend={!split} /></div>;
-  const graph = at("chart") ? <div className="space-y-2"><div className="flex justify-end">{at("chart")}</div>{chart}</div> : chart;
+    : <div className={z.rows}>{top.map(row)}</div>;
+  const desc = (
+    <div>
+      <div className="flex flex-wrap items-baseline gap-x-2"><span className={cn("tabular-nums text-text", z.value)}>{h.value}</span><span className="text-caption text-mute">{h.sub}</span></div>
+      {at("value") && <div className="mt-2">{at("value")}</div>}
+      <div className="mt-2">{rows}</div>
+    </div>
+  );
+  // 좁은 컨테이너(< 768): 이름이 그래프 위, 막대·설명은 두 줄을 걸친다. 넓으면 네 열.
+  const span = z.head ? "" : "row-span-2 row-start-1 @3xl:row-span-1 @3xl:row-auto";
   return (
-    <div className={cn("grid items-center", z.gap, z.cols)}>
-      {z.head ? <div className="space-y-3">{head}{graph}</div> : <>{head}{graph}</>}
-      {bar}
-      {desc}
+    <div className={cn("grid grid-cols-[1fr_auto_200px] items-center gap-x-6 gap-y-3 @3xl:gap-y-0", z.cols, z.gap)}>
+      {z.head
+        ? <div className="space-y-3">{name}{graph}</div>
+        : <><div className="col-start-1 row-start-1 @3xl:col-auto @3xl:row-auto">{name}</div><div className="col-start-1 row-start-2 @3xl:col-auto @3xl:row-auto">{graph}</div></>}
+      <div className={cn(span, !z.head && "col-start-2 @3xl:col-auto")}>{bar}</div>
+      <div className={cn(span, !z.head && "col-start-3 @3xl:col-auto")}>{desc}</div>
     </div>
   );
 }
@@ -187,7 +202,7 @@ function StorageRow({ m }: { m: Metrics }) {
   const vol = Math.round(last(m.h.disk) - 116); // 시뮬레이션의 "디스크" 는 볼륨 합으로 쓴다
   const log = 6.3 + m.tick * 0.0002;
   return (
-    <div className="grid grid-cols-2 gap-5">
+    <div className="grid gap-5 md:grid-cols-2">
       <Storage m={m} title="내장 디스크" mount="/" total={512} parts={[{ label: "시스템", value: 24, tone: "idle" }, { label: "이미지", value: 84, tone: "info" }, { label: "로그", value: Math.round(log * 10) / 10, tone: "progress" }]} unitRow="로그 많이 쌓는 컨테이너" rows={[{ name: "worker", value: 3.1 + m.tick * 0.0001 }, { name: "api", value: 1.8 }, { name: "edge", value: 0.9 }]} />
       <Storage m={m} title="외장 SSD" mount="/mnt/ssd" total={2000} parts={[{ label: "볼륨", value: vol, tone: "running" }, { label: "백업", value: 132, tone: "progress" }, { label: "기타", value: 410, tone: "idle" }]} unitRow="볼륨 큰 컨테이너" rows={[...m.ct].sort((a, b) => b.vol - a.vol).slice(0, 3).map((c) => ({ name: c.name, value: c.vol }))} />
     </div>
@@ -196,7 +211,7 @@ function StorageRow({ m }: { m: Metrics }) {
 
 /** V2 — 띠 넷. 한 카드에 line 으로 나누거나(기본) 카드 넷으로. */
 function V2({ m, sz = "base" }: { m: Metrics; sz?: SizeId }) {
-  return <Card className="divide-y divide-line p-0">{RES.map((r) => <div key={r.id} className={SIZES[sz].pad}><Band m={m} r={r} sz={sz} /></div>)}</Card>;
+  return <Card className="divide-y divide-line p-0">{RES.map((r) => <div key={r.id} className={cn("@container", SIZES[sz].pad)}><Band m={m} r={r} sz={sz} /></div>)}</Card>;
 }
 
 export function Lab() {
@@ -212,8 +227,8 @@ export function Lab() {
     <AppShell>
       <PageHeading crumbs={[{ label: "홈", href: "#" }, { label: "리소스" }]} title="리소스" meta={<><IconText icon="server">homeserver · 8 코어 · 16 GB</IconText><IconText icon="clock">가동 {Math.floor(up / 86400)}일 {Math.floor((up % 86400) / 3600)}시간</IconText><IconText icon="project">컨테이너 {m.ct.length} 실행 중</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<>{tog === "page" && <FilterTabs value={dir} onValueChange={setDir} items={[{ value: "sum", label: "합" }, { value: "a", label: "읽기 · 받음" }, { value: "b", label: "쓰기 · 보냄" }]} />}<Switch checked={split} onCheckedChange={setSplit} label="컨테이너별" boxed /><Switch checked={live} onCheckedChange={setLive} label="실시간" boxed /></>} />
       <div className="mt-6 flex flex-wrap items-center gap-6 text-caption text-mute">
-        <span className="inline-flex items-center gap-3">크기<FilterTabs size="sm" value={sz} onValueChange={(v) => setSz(v as SizeId)} items={[{ value: "base", label: "S1 기준" }, { value: "tight", label: "S2 촘촘" }, { value: "roomy", label: "S3 여유" }, { value: "chart", label: "S4 그래프" }, { value: "head", label: "S5 머리 한 줄" }]} /></span>
-        <span className="inline-flex items-center gap-3">토글 위치<FilterTabs size="sm" value={tog} onValueChange={(v) => setTog(v as Tog)} items={[{ value: "value", label: "T1 값 아래" }, { value: "chart", label: "T2 그래프 위" }, { value: "rows", label: "T3 설명 위" }, { value: "page", label: "T4 페이지 머리" }]} /></span>
+        <span className="inline-flex items-center gap-3">크기<FilterTabs value={sz} onValueChange={(v) => setSz(v as SizeId)} items={[{ value: "base", label: "S1 기준" }, { value: "tight", label: "S2 촘촘" }, { value: "roomy", label: "S3 여유" }, { value: "chart", label: "S4 그래프" }, { value: "head", label: "S5 머리 한 줄" }]} /></span>
+        <span className="inline-flex items-center gap-3">토글 위치<FilterTabs value={tog} onValueChange={(v) => setTog(v as Tog)} items={[{ value: "value", label: "T1 값 아래" }, { value: "chart", label: "T2 그래프 위" }, { value: "name", label: "T3 이름 아래" }, { value: "page", label: "T4 페이지 머리" }]} /></span>
       </div>
       <div className="mt-5 space-y-5">
         <DirCtx.Provider value={{ dir, setDir, tog }}><V2 m={m} sz={sz} /></DirCtx.Provider>
