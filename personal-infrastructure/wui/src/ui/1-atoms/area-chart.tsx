@@ -8,7 +8,8 @@ export function AreaChart({ series, max, height = 160, format = (v) => String(v)
   const n = Math.max(...series.map((s) => s.points.length));
   const y = (v: number) => height - (v / top) * height;
   const path = (pts: number[]) => pts.map((v, i) => `${i ? "L" : "M"}${((i / (n - 1)) * W).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
-  const ticks = [1, 0.75, 0.5, 0.25, 0];
+  // 낮은 그래프는 눈금을 줄인다 — 글자가 겹치면 읽을 수 없다
+  const ticks = height >= 120 ? [1, 0.75, 0.5, 0.25, 0] : height >= 80 ? [1, 0.5, 0] : [1, 0];
   return (
     <div className={cn("w-full", className)}>
       <div className="relative" style={{ height }}>
