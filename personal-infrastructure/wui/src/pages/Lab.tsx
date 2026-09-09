@@ -7,34 +7,58 @@ const walk = (seed: number, n: number, base: number, amp: number) => { const r =
 type Ct = { name: string; stack: string; cpu: number; mem: number; memLimit: number; uptime: string; restarts: number; status: string; spark: number[]; memSpark: number[]; ioSpark: number[]; netSpark: number[]; wr: number; rd: number; wrRate: number; rdRate: number; vol: number; rx: number; tx: number; rxRate: number; txRate: number };
 type Metrics = { h: { cpu: number[]; mem: number[]; disk: number[]; net_in: number[]; net_out: number[] }; ct: Ct[]; tick: number };
 const seed = (): Metrics => ({
-  h: { cpu: walk(1, 48, 22, 12), mem: walk(2, 48, 6.1, 0.6), disk: walk(3, 48, 212, 0.4), net_in: walk(4, 48, 12, 8), net_out: walk(5, 48, 3, 3) },
+  h: { cpu: walk(1, 90, 22, 4), mem: walk(2, 90, 6.1, 0.2), disk: walk(3, 90, 212, 0.1), net_in: walk(4, 90, 12, 4), net_out: walk(5, 90, 10, 3) },
   ct: [
-    { name: "api", ioSpark: walk(31, 24, 1.3, 0.65), netSpark: walk(41, 24, 8, 4.0), stack: "dockerfile", cpu: 12, mem: 1.4, memLimit: 2, uptime: "6일 4시간", restarts: 0, status: "running", spark: walk(11, 24, 12, 6), memSpark: walk(21, 24, 1.4, 0.2), wr: 3.7, rd: 254.9, wrRate: 0.2, rdRate: 1.1, vol: 12, rx: 18.6, tx: 90.2, rxRate: 6, txRate: 2 },
-    { name: "blog", ioSpark: walk(32, 24, 0.1, 0.1), netSpark: walk(42, 24, 4, 2.0), stack: "static", cpu: 1, mem: 0.1, memLimit: 0.5, uptime: "14일", restarts: 0, status: "running", spark: walk(12, 24, 1, 1), memSpark: walk(22, 24, 0.1, 0.02), wr: 0, rd: 15.4, wrRate: 0, rdRate: 0.1, vol: 0.4, rx: 2.1, tx: 40.5, rxRate: 1, txRate: 3 },
-    { name: "worker", ioSpark: walk(33, 24, 5.1, 2.55), netSpark: walk(43, 24, 0.5, 0.2), stack: "node", cpu: 34, mem: 2.9, memLimit: 3, uptime: "3시간", restarts: 3, status: "running", spark: walk(13, 24, 30, 14), memSpark: walk(23, 24, 2.9, 0.3), wr: 108.7, rd: 7.1, wrRate: 4.8, rdRate: 0.3, vol: 38, rx: 0.9, tx: 0.3, rxRate: 0.4, txRate: 0.1 },
-    { name: "postgres", ioSpark: walk(34, 24, 2.1, 1.05), netSpark: walk(44, 24, 1.5, 0.75), stack: "db", cpu: 4, mem: 0.9, memLimit: 2, uptime: "14일", restarts: 0, status: "running", spark: walk(14, 24, 4, 2), memSpark: walk(24, 24, 0.9, 0.1), wr: 90.3, rd: 18.6, wrRate: 1.6, rdRate: 0.5, vol: 46, rx: 4.2, tx: 3.9, rxRate: 0.8, txRate: 0.7 },
-    { name: "edge", ioSpark: walk(35, 24, 0.2, 0.1), netSpark: walk(45, 24, 23, 11.5), stack: "caddy", cpu: 2, mem: 0.2, memLimit: 0.5, uptime: "14일", restarts: 0, status: "running", spark: walk(15, 24, 2, 1), memSpark: walk(25, 24, 0.2, 0.03), wr: 0.7, rd: 140.8, wrRate: 0, rdRate: 0.2, vol: 0.1, rx: 176, tx: 142, rxRate: 12, txRate: 11 },
+    { name: "api", ioSpark: walk(31, 90, 1.3, 0.65), netSpark: walk(41, 90, 8, 4.0), stack: "dockerfile", cpu: 12, mem: 1.4, memLimit: 2, uptime: "6일 4시간", restarts: 0, status: "running", spark: walk(11, 90, 12, 6), memSpark: walk(21, 90, 1.4, 0.2), wr: 3.7, rd: 254.9, wrRate: 0.2, rdRate: 1.1, vol: 12, rx: 18.6, tx: 90.2, rxRate: 6, txRate: 2 },
+    { name: "blog", ioSpark: walk(32, 90, 0.1, 0.1), netSpark: walk(42, 90, 4, 2.0), stack: "static", cpu: 1, mem: 0.1, memLimit: 0.5, uptime: "14일", restarts: 0, status: "running", spark: walk(12, 90, 1, 1), memSpark: walk(22, 90, 0.1, 0.02), wr: 0, rd: 15.4, wrRate: 0, rdRate: 0.1, vol: 0.4, rx: 2.1, tx: 40.5, rxRate: 1, txRate: 3 },
+    { name: "worker", ioSpark: walk(33, 90, 5.1, 2.55), netSpark: walk(43, 90, 0.5, 0.2), stack: "node", cpu: 34, mem: 2.9, memLimit: 3, uptime: "3시간", restarts: 3, status: "running", spark: walk(13, 90, 30, 14), memSpark: walk(23, 90, 2.9, 0.3), wr: 108.7, rd: 7.1, wrRate: 4.8, rdRate: 0.3, vol: 38, rx: 0.9, tx: 0.3, rxRate: 0.4, txRate: 0.1 },
+    { name: "postgres", ioSpark: walk(34, 90, 2.1, 1.05), netSpark: walk(44, 90, 1.5, 0.75), stack: "db", cpu: 4, mem: 0.9, memLimit: 2, uptime: "14일", restarts: 0, status: "running", spark: walk(14, 90, 4, 2), memSpark: walk(24, 90, 0.9, 0.1), wr: 90.3, rd: 18.6, wrRate: 1.6, rdRate: 0.5, vol: 46, rx: 4.2, tx: 3.9, rxRate: 0.8, txRate: 0.7 },
+    { name: "edge", ioSpark: walk(35, 90, 0.2, 0.1), netSpark: walk(45, 90, 23, 11.5), stack: "caddy", cpu: 2, mem: 0.2, memLimit: 0.5, uptime: "14일", restarts: 0, status: "running", spark: walk(15, 90, 2, 1), memSpark: walk(25, 90, 0.2, 0.03), wr: 0.7, rd: 140.8, wrRate: 0, rdRate: 0.2, vol: 0.1, rx: 176, tx: 142, rxRate: 12, txRate: 11 },
   ],
   tick: 0,
 });
-// 실시간 흉내 — 1초마다 한 칸 밀고 끝값에 랜덤 워크. 호스트 CPU 는 컨테이너 합에 바탕 부하를 더한 값이라 둘이 같이 움직인다.
+// 실제처럼 — 랜덤 워크가 아니라 원인이 있는 움직임. 트래픽(느린 파도 + 간헐 버스트)이 api·edge·postgres 를 끌고, worker 는 주기 작업으로 치솟았다 내려오고(메모리 톱니), 호스트는 컨테이너 합에 바탕을 더한 값. 표시값은 EMA 로 부드럽게.
+type Sim = { t: number; burst: number; job: number; jobLeft: number; nextJob: number; drift: number };
+let sim: Sim = { t: 0, burst: 0, job: 0, jobLeft: 0, nextJob: 40, drift: 0 };
+const rnd2 = rnd(4242);
+const ema = (prev: number, next: number, a = 0.35) => Math.round((prev + (next - prev) * a) * 100) / 100;
 const step = (m: Metrics): Metrics => {
-  const r = rnd(1000 + m.tick);
-  const nudge = (v: number, amp: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, Math.round((v + (r() - 0.5) * amp) * 10) / 10));
+  const t = sim.t + 1;
+  // 트래픽: 느린 파도(주기 240s) + 간헐 버스트(지수 감쇠)
+  if (rnd2() < 0.04) sim.burst += 8 + rnd2() * 14;
+  sim.burst *= 0.82;
+  const traffic = 10 + 6 * Math.sin(t / 38) + 3 * Math.sin(t / 11) + sim.burst; // Mb/s 느낌
+  // worker 주기 작업: 40~70초마다 8~14초 동안 60~90%
+  if (sim.jobLeft > 0) { sim.jobLeft -= 1; sim.job = Math.min(1, sim.job + 0.35); } else { sim.job = Math.max(0, sim.job - 0.25); if (t >= sim.nextJob) { sim.jobLeft = 8 + Math.round(rnd2() * 6); sim.nextJob = t + 40 + Math.round(rnd2() * 30); } }
+  sim.drift = Math.min(1, sim.drift + (sim.jobLeft > 0 ? 0.03 : -0.02)); // worker 메모리 톱니
+  const noise = (k: number) => (rnd2() - 0.5) * k;
   const push = (a: number[], v: number) => [...a.slice(1), v];
-  const ct = m.ct.map((c) => { const cpu = nudge(c.cpu, c.cpu > 20 ? 10 : 3, 0, 100); const mem = nudge(c.mem, 0.08, 0.05, c.memLimit); const wrRate = nudge(c.wrRate, c.wrRate > 1 ? 2 : 0.2, 0, 20), rdRate = nudge(c.rdRate, 0.4, 0, 10), rxRate = nudge(c.rxRate, c.rxRate > 5 ? 4 : 0.6, 0, 30), txRate = nudge(c.txRate, c.txRate > 5 ? 4 : 0.4, 0, 30); return { ...c, cpu, mem, spark: push(c.spark, cpu), memSpark: push(c.memSpark, mem), ioSpark: push(c.ioSpark, Math.round((wrRate + rdRate) * 10) / 10), netSpark: push(c.netSpark, Math.round((rxRate + txRate) * 10) / 10), wrRate, rdRate, rxRate, txRate, wr: Math.round((c.wr + wrRate / 1024) * 10) / 10, rd: Math.round((c.rd + rdRate / 1024) * 10) / 10, rx: Math.round((c.rx + rxRate / 8 / 1024) * 100) / 100, tx: Math.round((c.tx + txRate / 8 / 1024) * 100) / 100 }; });
-  const cpu = Math.min(100, Math.round(ct.reduce((a, c) => a + c.cpu, 0) * 0.4 + 4 + r() * 3));
-  const mem = Math.round(ct.reduce((a, c) => a + c.mem, 0) * 10) / 10 + 0.6;
-  const last = (a: number[]) => a[a.length - 1];
-  return { tick: m.tick + 1, ct, h: { cpu: push(m.h.cpu, cpu), mem: push(m.h.mem, Math.round(mem * 10) / 10), disk: push(m.h.disk, nudge(last(m.h.disk), 0.2, 200, 512)), net_in: push(m.h.net_in, nudge(last(m.h.net_in), 6, 1, 40)), net_out: push(m.h.net_out, nudge(last(m.h.net_out), 2, 1, 20)) } };
+  const target: Record<string, Partial<Ct>> = {
+    api: { cpu: 5 + traffic * 0.7 + noise(1.5), mem: 1.25 + traffic * 0.012, rxRate: traffic * 0.45, txRate: traffic * 0.9, wrRate: 0.15 + traffic * 0.01, rdRate: 0.4 + traffic * 0.05 },
+    blog: { cpu: 0.8 + noise(0.4), mem: 0.1, rxRate: 0.4 + traffic * 0.05, txRate: 1.5 + traffic * 0.2, wrRate: 0, rdRate: 0.05 + traffic * 0.01 },
+    worker: { cpu: 3 + sim.job * (62 + noise(12)), mem: 1.6 + sim.drift * 1.3, rxRate: 0.3, txRate: 0.1, wrRate: 0.3 + sim.job * 6, rdRate: 0.2 + sim.job * 1.5 },
+    postgres: { cpu: 2 + traffic * 0.15 + sim.job * 4, mem: 0.85 + traffic * 0.004, rxRate: 0.3 + traffic * 0.08, txRate: 0.3 + traffic * 0.08, wrRate: 0.4 + traffic * 0.06 + sim.job * 1.2, rdRate: 0.3 + traffic * 0.04 },
+    edge: { cpu: 1.5 + traffic * 0.06, mem: 0.2, rxRate: traffic * 1.0, txRate: traffic * 0.9, wrRate: 0.02, rdRate: 0.05 },
+  };
+  const ct = m.ct.map((c) => {
+    const g = target[c.name] as Required<Pick<Ct, "cpu" | "mem" | "rxRate" | "txRate" | "wrRate" | "rdRate">>;
+    const cpu = Math.min(100, ema(c.cpu, g.cpu)), mem = Math.min(c.memLimit, ema(c.mem, g.mem, 0.2)), rxRate = ema(c.rxRate, g.rxRate), txRate = ema(c.txRate, g.txRate), wrRate = ema(c.wrRate, g.wrRate), rdRate = ema(c.rdRate, g.rdRate);
+    return { ...c, cpu, mem, rxRate, txRate, wrRate, rdRate, spark: push(c.spark, cpu), memSpark: push(c.memSpark, mem), ioSpark: push(c.ioSpark, Math.round((wrRate + rdRate) * 10) / 10), netSpark: push(c.netSpark, Math.round((rxRate + txRate) * 10) / 10), wr: Math.round((c.wr + wrRate / 1024) * 100) / 100, rd: Math.round((c.rd + rdRate / 1024) * 100) / 100, rx: Math.round((c.rx + rxRate / 8 / 1024) * 1000) / 1000, tx: Math.round((c.tx + txRate / 8 / 1024) * 1000) / 1000 };
+  });
+  const sum = (f: (c: Ct) => number) => ct.reduce((a, c) => a + f(c), 0);
+  const cpu = Math.min(100, Math.round(ema(last(m.h.cpu), sum((c) => c.cpu) * 0.55 + 4 + noise(1.2))));
+  const mem = Math.round((sum((c) => c.mem) + 0.6) * 10) / 10;
+  const disk = Math.round((last(m.h.disk) + 0.004 + (sim.jobLeft > 0 ? 0.01 : 0)) * 100) / 100; // 천천히 찬다
+  sim.t = t;
+  return { tick: m.tick + 1, ct, h: { cpu: push(m.h.cpu, cpu), mem: push(m.h.mem, mem), disk: push(m.h.disk, disk), net_in: push(m.h.net_in, Math.round(sum((c) => c.rxRate) * 10) / 10), net_out: push(m.h.net_out, Math.round(sum((c) => c.txRate) * 10) / 10) } };
 };
+const last = (a: number[]) => a[a.length - 1];
 function useLive(on: boolean) {
-  const [m, setM] = useState<Metrics>(seed);
+  const [m, setM] = useState<Metrics>(() => { let x = seed(); for (let i = 0; i < 90; i += 1) x = step(x); return x; });
   const timer = useRef<number>(0);
   useEffect(() => { if (!on) return; timer.current = window.setInterval(() => setM(step), 1000); return () => window.clearInterval(timer.current); }, [on]);
   return m;
 }
-const last = (a: number[]) => a[a.length - 1];
 
 function Option({ id, title, from, fit, children }: { id: string; title: string; from: string; fit: string; children: React.ReactNode }) {
   return (
