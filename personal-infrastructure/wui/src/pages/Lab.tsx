@@ -78,6 +78,7 @@ const RES: { id: Res; label: string; unit: (c: Ct) => string; fmt: (v: number) =
   { id: "net", label: "네트워크", unit: (c) => `${(c.rxRate + c.txRate).toFixed(1)} Mb/s`, fmt: (v) => `${v.toFixed(1)} Mb/s`, raw: (c) => c.rxRate + c.txRate, pct: (c) => Math.min(100, (c.rxRate + c.txRate) * 2), tone: () => "good" },
 ];
 // 색은 순위를 말한다(사용자 결정 2026-09-09): 전체는 accent(파랑), 상위 1·2·3 은 청록 계열에서 점점 옅게. 컨테이너 고유색은 없다.
+const NOW = "var(--now)"; // 현재값 = 전체
 const RANK = ["var(--rank-1)", "var(--rank-2)", "var(--rank-3)"];
 const rankOf = (top: { name: string }[], name: string) => RANK[Math.max(0, top.findIndex((c) => c.name === name))];
 const colorOfCt = (m: Metrics, name: string) => RANK[Math.max(0, [...m.ct].sort((a, b) => b.vol - a.vol).findIndex((c) => c.name === name)) % RANK.length];
@@ -107,12 +108,12 @@ const hostOf = (H: Metrics["h"], id: "cpu" | "mem") => ({
 }[id]);
 
 /** 띠 크기 규격 — 제목 줄(작게 + 우측 토글) → 그래프(우측 끝에 현재값) 를 왼쪽에, 가로 쌓은 띠 + 상위 3 을 오른쪽에(사용자 지정 2026-09-09). 2열은 창 1024 이상에서만(사용자 결정 2026-09-09: 전환점은 창 기준으로 통일). */
-type Size = { pad: string; gap: string; cols: string; chart: number; name: string; value: string; row: string; dot: string; rows: string };
+type Size = { pad: string; gap: string; cols: string; chart: number; now: number; name: string; value: string; row: string; dot: string; rows: string };
 const SIZES = {
-  base:  { pad: "px-4 py-4 sm:px-6 sm:py-5", gap: "lg:gap-x-8",  cols: "lg:grid-cols-[1fr_280px]", chart: 64, name: "text-body",    value: "text-title",               row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
-  tight: { pad: "px-4 py-4 sm:px-5", gap: "lg:gap-x-6",  cols: "lg:grid-cols-[1fr_240px]", chart: 48, name: "text-caption", value: "text-body-lg font-medium", row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0" },
-  roomy: { pad: "px-4 py-5 sm:px-7 sm:py-7", gap: "lg:gap-x-10", cols: "lg:grid-cols-[1fr_320px]", chart: 88, name: "text-body",    value: "text-title-lg",            row: "text-caption",          dot: "size-2",   rows: "space-y-1" },
-  chart: { pad: "px-4 py-4 sm:px-6 sm:py-5", gap: "lg:gap-x-6",  cols: "lg:grid-cols-[1fr_216px]", chart: 80, name: "text-caption", value: "text-title",               row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
+  base:  { pad: "px-4 py-4 sm:px-6 sm:py-5", gap: "lg:gap-x-8",  cols: "lg:grid-cols-[1fr_280px]", chart: 64, now: 104, name: "text-body",    value: "text-body-lg font-medium",  row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
+  tight: { pad: "px-4 py-4 sm:px-5", gap: "lg:gap-x-6",  cols: "lg:grid-cols-[1fr_240px]", chart: 48, now: 92,  name: "text-caption", value: "text-body font-medium",     row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0" },
+  roomy: { pad: "px-4 py-5 sm:px-7 sm:py-7", gap: "lg:gap-x-10", cols: "lg:grid-cols-[1fr_320px]", chart: 88, now: 120, name: "text-body",    value: "text-title",                row: "text-caption",          dot: "size-2",   rows: "space-y-1" },
+  chart: { pad: "px-4 py-4 sm:px-6 sm:py-5", gap: "lg:gap-x-6",  cols: "lg:grid-cols-[1fr_216px]", chart: 80, now: 104, name: "text-caption", value: "text-body-lg font-medium",  row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
 } satisfies Record<string, Size>;
 type SizeId = keyof typeof SIZES;
 const DirCtx = createContext<{ dir: Dir; setDir: (d: Dir) => void; marks: boolean }>({ dir: "sum", setDir: () => {}, marks: true });
@@ -131,11 +132,10 @@ function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?:
   const color = (name: string) => rankOf(top, name);
   const n = h.series[0].points.length;
   const series = split
-    ? [{ name: "전체", points: h.total, tone: "accent" as const }, ...top.map((c) => ({ name: c.name, points: sparkOf(c, r.id).concat(sparkOf(c, r.id)).slice(-n), color: color(c.name), fill: false }))]
-    : h.series;
+    ? [{ name: "전체", points: h.total, color: NOW, fill: false }, ...top.map((c) => ({ name: c.name, points: sparkOf(c, r.id).concat(sparkOf(c, r.id)).slice(-n), color: color(c.name), fill: false }))]
+    : h.series.map((x) => ({ ...x, color: NOW, fill: false })); // 컨테이너별을 끄면 전체 하나 — 색은 현재값과 같게
   const all = m.ct.reduce((a, c) => a + raw(c), 0) || 1; // 컨테이너 합 — 몫(share)의 분모
   const share = (c: Ct) => (h.pct * raw(c)) / all; // 전체 띠 안에서 이 컨테이너가 차지하는 폭
-  const ACC = "var(--accent)";
   const rest = Math.max(0, h.pct - top.reduce((a, c) => a + share(c), 0)); // 상위 3 밖의 나머지 사용량
   return (
     <div className={cn("grid gap-x-6 gap-y-4", z.cols, z.gap)}>
@@ -146,18 +146,18 @@ function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?:
           {D && <FilterTabs size="sm" value={dir} onValueChange={setDir} items={[{ value: "sum", label: "합" }, { value: "a", label: D.a.label }, { value: "b", label: D.b.label }]} />}
         </div>
         {/* 메인 그래프 — 우측 끝 선 높이에 현재값 */}
-        <div className="mt-2"><AreaChart series={series} max={h.max} height={z.chart} format={h.fmt} formatMark={r.fmt} legend={false} annotate={g.marks} nowLabel={h.value} nowNote={h.sub} nowClass={z.value} /></div>
+        <div className="mt-2"><AreaChart series={series} max={h.max} height={z.chart} format={h.fmt} formatMark={r.fmt} legend={false} annotate={g.marks} nowLabel={h.value} nowClass={z.value} nowColor={NOW} nowWidth={z.now} /></div>
       </div>
       {/* 오른쪽 — 가로 쌓은 띠 + 상위 3 */}
       <div className="lg:pt-8">
         <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-card-3">
           {split && top.map((c) => <span key={c.name} className="h-full rounded-full move" style={{ width: `${share(c)}%`, background: color(c.name) }} />)}
-          <span className="h-full rounded-full move" style={{ width: `${split ? rest : h.pct}%`, background: ACC, opacity: split ? 0.35 : 1 }} />
+          <span className="h-full rounded-full move" style={{ width: `${split ? rest : h.pct}%`, background: NOW, opacity: split ? 0.4 : 1 }} />
         </div>
         <div className={cn("mt-3", z.rows)}>
           {split
             ? top.map((c) => <div key={c.name} className={cn("grid grid-cols-[auto_1fr_auto] items-center gap-2", z.row)}><span className={cn("rounded-full", z.dot)} style={{ background: color(c.name) }} /><span className="text-sub">{c.name}</span><span className="font-mono tabular-nums text-mute">{r.fmt(raw(c))}</span></div>)
-            : top.map((c) => <div key={c.name} className="grid grid-cols-[72px_1fr_72px] items-center gap-2 py-0.5"><span className="truncate text-caption text-text">{c.name}</span><Progress value={r.pct(c)} tone={r.tone(c)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{r.unit(c)}</span></div>)}
+            : top.map((c) => <div key={c.name} className="grid grid-cols-[72px_1fr_72px] items-center gap-2 py-0.5"><span className="truncate text-caption text-text">{c.name}</span><Progress value={r.pct(c)} color={color(c.name)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{r.unit(c)}</span></div>)}
         </div>
       </div>
     </div>
@@ -198,7 +198,7 @@ export function Lab() {
   const [live, setLive] = useState(true);
   const [split, setSplit] = useState(true);
   const [sz, setSz] = useState<SizeId>("base");
-  const [marks, setMarks] = useState(true);
+  const [marks, setMarks] = useState(false); // 전체 규모는 눈금으로(사용자 결정 2026-09-09)
   const m = useLive(live);
   const up = 6 * 86400 + 4 * 3600 + m.tick;
   return (

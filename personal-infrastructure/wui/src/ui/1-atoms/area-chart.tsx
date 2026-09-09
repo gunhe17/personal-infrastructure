@@ -5,7 +5,7 @@ const COLOR = { accent: "var(--accent)", good: "var(--good)", warn: "var(--warn)
 export type Series = { name: string; points: number[]; tone?: keyof typeof COLOR; color?: string; fill?: boolean };
 const colorOf = (s: Series) => s.color ?? COLOR[s.tone ?? "accent"];
 /** `annotate` — 축 눈금 대신 첫 시리즈의 최고·최저를 점 옆에 쓰고(점선은 최고 높이), 지금 점에 후광. 값 표기는 `formatMark`(없으면 `format`). 카드 안 작은 시계열에서 "전체 중 지금" 을 읽게 한다(사용자 제안 2026-09-09). */
-export function AreaChart({ series, max, height = 160, format = (v) => String(v), formatMark, xLabels, legend = true, annotate = false, nowLabel, nowNote, nowClass, className }: { series: Series[]; max?: number; height?: number; format?: (v: number) => string; formatMark?: (v: number) => string; xLabels?: string[]; legend?: boolean; annotate?: boolean; nowLabel?: React.ReactNode; nowNote?: React.ReactNode; nowClass?: string; className?: string }) {
+export function AreaChart({ series, max, height = 160, format = (v) => String(v), formatMark, xLabels, legend = true, annotate = false, nowLabel, nowClass, nowColor, nowWidth, axisWidth = 36, className }: { series: Series[]; max?: number; height?: number; format?: (v: number) => string; formatMark?: (v: number) => string; xLabels?: string[]; legend?: boolean; annotate?: boolean; nowLabel?: React.ReactNode; nowClass?: string; nowColor?: string; nowWidth?: number; axisWidth?: number; className?: string }) {
   const W = 1000, top = Math.max(max ?? 0, ...series.flatMap((s) => s.points)) || 1;
   const n = Math.max(...series.map((s) => s.points.length));
   const y = (v: number) => height - (v / top) * height;
@@ -37,30 +37,27 @@ export function AreaChart({ series, max, height = 160, format = (v) => String(v)
             <circle cx={W} cy={y(s.points[s.points.length - 1])} r="3" fill={c} vectorEffect="non-scaling-stroke" />
           </g>); })}
       </svg>
-      {annotate
-        ? P.length > 1 && <div className="pointer-events-none absolute inset-0">{[mark(iHi, "최고", true), mark(iLo, "최저", false)]}</div>
-        : <div className="pointer-events-none absolute inset-y-0 -start-1 flex -translate-x-full flex-col justify-between font-mono text-[11px] leading-4 tabular-nums text-mute">
-            {ticks.map((t) => <span key={t} className="-translate-y-1/2 first:translate-y-0 last:-translate-y-full">{format(Math.round(top * t))}</span>)}
-          </div>}
+      {annotate && P.length > 1 && <div className="pointer-events-none absolute inset-0">{[mark(iHi, "최고", true), mark(iLo, "최저", false)]}</div>}
+    </div>
+  );
+  // 눈금 — 고정폭 열. 절대 배치로 두면 라벨 길이(100% vs 2000G)만큼 그래프 시작점이 어긋난다.
+  const axis = !annotate && (
+    <div className="pointer-events-none flex shrink-0 flex-col justify-between text-end font-mono text-[11px] leading-4 tabular-nums text-mute" style={{ height, width: axisWidth }}>
+      {ticks.map((t) => <span key={t} className="-translate-y-1/2 first:translate-y-0 last:-translate-y-full">{format(Math.round(top * t))}</span>)}
     </div>
   );
   // 현재값 — 그래프 오른쪽, 마지막 점 높이에 맞춘 자리(사용자 지정 2026-09-09).
-  const nowBox = (
-    <>
-      <div className={cn("whitespace-nowrap tabular-nums text-text", nowClass)}>{nowLabel}</div>
-      {nowNote !== undefined && <div className="whitespace-nowrap text-caption text-mute">{nowNote}</div>}
-    </>
-  );
+  const nowBox = <div className={cn("whitespace-nowrap tabular-nums", nowClass)} style={{ color: nowColor }}>{nowLabel}</div>;
   const now = nowLabel !== undefined && (
-    <div className="relative shrink-0" style={{ height }}>
-      {/* 자리를 차지하는 사본(보이지 않음) — 없으면 절대 배치라 폭이 0 이 되어 화면 밖으로 넘친다. */}
-      <div aria-hidden="true" className="invisible">{nowBox}</div>
-      <div className="absolute start-0 -translate-y-1/2" style={{ top: Math.min(height - 14, Math.max(14, y(P[P.length - 1] ?? 0))) }}>{nowBox}</div>
+    <div className="relative shrink-0" style={{ height, width: nowWidth }}>
+      {/* nowWidth 가 없으면 보이지 않는 사본이 폭을 잡는다. 고정폭을 주면 띠마다 그래프 끝점이 같은 x 에 선다. */}
+      {nowWidth === undefined && <div aria-hidden="true" className="invisible">{nowBox}</div>}
+      <div className="absolute start-0 -translate-y-1/2" style={{ top: Math.min(height - 12, Math.max(12, y(P[P.length - 1] ?? 0))) }}>{nowBox}</div>
     </div>
   );
   return (
     <div className={cn("w-full", className)}>
-      <div className={cn(now && "flex items-stretch gap-3")}>{chart}{now}</div>
+      <div className={cn((now || axis) && "flex items-stretch gap-3")}>{axis}{chart}{now}</div>
       {annotate && P.length > 1 && <div aria-hidden="true" className="h-6" />}
       {xLabels && <div className="mt-2 flex justify-between font-mono text-[11px] leading-4 tabular-nums text-mute">{xLabels.map((l, i) => <span key={i}>{l}</span>)}</div>}
       {legend && series.length > 1 && <div className="mt-3 flex flex-wrap gap-4">{series.map((s) => <span key={s.name} className="inline-flex items-center gap-2 text-caption text-mute"><span className="size-2 rounded-full" style={{ background: colorOf(s) }} />{s.name}</span>)}</div>}
