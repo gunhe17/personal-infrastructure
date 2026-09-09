@@ -21,7 +21,7 @@ const SYSTEM = [{ value: "resources", label: "Resources", icon: "monitor" as con
 export function DetailScreen() {
   const [tab, setTab] = useState("overview");
   return (
-    <AppShell nav={<SideNav projects={PROJECTS} project="api" items={ITEMS} item="overview" system={SYSTEM} status={<StatusDot tone="running">edge up</StatusDot>} profile={{ name: "gunhee", sub: "admin" }} />}>
+    <AppShell nav={<SideNav projects={PROJECTS} project="api" items={ITEMS} item="overview" system={SYSTEM} profile={{ name: "gunhee", sub: "admin" }} />}>
       <PageHeading crumbs={[{ label: "프로젝트", href: "#" }, { label: "api" }]} title="api" meta={<><StatusDot tone="running">돌고 있음</StatusDot><IconText icon="domain">app.example.com</IconText><IconText icon="clock">3분 전 배포</IconText></>} actions={<><Button>로그</Button><Button variant="primary">다시 배포</Button><IconButton label="더" icon="more" variant="secondary" /></>} />
       <Tabs className="mt-6" value={tab} onValueChange={setTab} tabs={[{ value: "overview", label: "개요" }, { value: "deploys", label: "배포", count: 12 }, { value: "env", label: "환경변수", count: 3 }, { value: "domains", label: "도메인", count: 1 }]} />
       <div className="mt-6 grid grid-cols-2 gap-5">

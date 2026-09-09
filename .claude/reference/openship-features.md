@@ -232,3 +232,4 @@ e2e 가 잡아낸 제품 버그(수정됨): Dockerfile 스택 포트가 무조�
 - 2026-09-09 로그인 방식 변경(사용자 지정): 토큰 → **관리자 비밀번호**. 최초 실행이면 `SignInCard mode="setup"`(새 비밀번호 + 확인, 8자 이상, 불일치 검사), 그다음부터 `mode="signin"`. `lib/session.ts` 는 SHA-256 해시를 localStorage 에, 세션 플래그를 sessionStorage 에 — **진짜 검증은 서버 몫**(API 붙일 때 이 파일만 교체). e2e W8 이 설정·로그인 두 경우를 모두 통과하도록 갱신.
 - 2026-09-09 로그인은 개발용 임시로 확정(사용자 결정). 없는 명령을 안내하던 문구를 지우고 "Dev auth — kept in this browser only." + 로그인 화면의 **Reset password**(브라우저 저장분만 지우고 최초 설정으로) 로 대체 — 개발 중 잠기지 않게. 서버 인증이 붙으면 `lib/session.ts` 와 이 버튼을 함께 걷어낸다.
 - 2026-09-09 홈 프로필 개선(사용자 지적): 사이드바 바닥의 점 + 아바타만 있던 줄을 **상태 줄(caption) + Separator + 프로필 줄**로. 프로필은 아바타 32 · 이름 15/500 · "admin" 13 · 끝에 Menu(Settings · Change password · Sign out, 파괴적 항목은 bad). ITEM 레시피에 `gap-2` 추가 — 팝업 항목의 아이콘과 글자가 붙어 있었다. SideNav `user`/`status` prop → `profile`/`status`.
+- 2026-09-09 사이드바 상태 줄 제거(사용자 지정): "edge up" 은 Edge 구역이 이미 말하므로 바닥에는 프로필 줄만. SideNav `status` prop 도 함께 삭제(쓰는 곳이 없어짐).

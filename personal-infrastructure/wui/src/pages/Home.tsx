@@ -1,4 +1,4 @@
-import { AppShell, Button, Card, EmptyState, Icon, IconText, InlineCode, Menu, MenuItem, MenuSeparator, PageHeading, SideNav, StatusDot } from "@/ui";
+import { AppShell, Button, Card, EmptyState, Icon, IconText, InlineCode, Menu, MenuItem, MenuSeparator, PageHeading, SideNav } from "@/ui";
 import { signOut } from "@/lib/session";
 
 const SYSTEM = [
@@ -27,7 +27,6 @@ export function Home() {
   return (
     <AppShell nav={
       <SideNav projects={[]} project="" items={[]} item="home" system={SYSTEM}
-        status={<StatusDot tone="running">edge up · 20000</StatusDot>}
         profile={{ name: "gunhee", sub: "admin", end: <ProfileMenu /> }} />
     }>
       <PageHeading title="Home" meta={<><IconText icon="server">homeserver · 8 cores · 16 GB</IconText><IconText icon="clock">Up 6d 4h</IconText></>} />

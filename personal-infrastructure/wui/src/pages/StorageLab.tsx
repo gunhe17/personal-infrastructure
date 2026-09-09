@@ -1,4 +1,4 @@
-import { SideNav, StatusDot, AppShell, AreaChart, Card, cn, DeviceList, Dot, formatGB as GB, formatGBShort as AX, IconText, NOW, PageHeading, Progress, SectionHeading, Sparkline } from "@/ui";
+import { SideNav, AppShell, AreaChart, Card, cn, DeviceList, Dot, formatGB as GB, formatGBShort as AX, IconText, NOW, PageHeading, Progress, SectionHeading, Sparkline } from "@/ui";
 
 // Devices Lab — 장치 한 줄을 어떻게 표현할 것인가. V1 이 확정되어 `DeviceList` 로 승격됐고, V2~V5 는 비교용으로 남는다.
 const day = (n: number) => (n >= 365 ? `${Math.floor(n / 365)}년 ${Math.floor((n % 365) / 30)}개월` : n >= 60 ? `${Math.floor(n / 30)}개월` : `${n}일`);
@@ -146,7 +146,7 @@ const SYSTEM = [{ value: "resources", label: "Resources", icon: "monitor" as con
 
 export function StorageLab() {
   return (
-    <AppShell nav={<SideNav projects={PROJECTS} project="api" items={ITEMS} item="storage" system={SYSTEM} status={<StatusDot tone="running">edge up</StatusDot>} profile={{ name: "gunhee", sub: "admin" }} />}>
+    <AppShell nav={<SideNav projects={PROJECTS} project="api" items={ITEMS} item="storage" system={SYSTEM} profile={{ name: "gunhee", sub: "admin" }} />}>
       <PageHeading crumbs={[{ label: "Home", href: "#" }, { label: "Lab" }, { label: "Devices" }]} title="Devices" meta={<><IconText icon="volume">How to show usage and trend in one row</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" />fake data · internal disk is 80% full</span></>} />
       <div className="mt-8">
         <Option id="v1" title="V1 · Labels above the bar" from="그래프 아래에 30d ago → now 를 늘 적어 축과 방향을 못박는다" fit="어느 행을 봐도 기간과 방향이 그 자리에 있다" ><V1 /></Option>

@@ -16,7 +16,7 @@ export type NavItem = { value: string; label: string; icon?: IconName; count?: n
  * 프로젝트를 세로로 세우고 **고른 프로젝트 아래에서만** 그 항목이 펼쳐진다. 열이 하나라 본문이 넓다.
  * 프로젝트에 속하지 않는 것(리소스·백업·엣지…)은 아래 `system` 묶음으로 내린다.
  */
-export function SideNav({ brand = "homeserver", projects, project, onProjectChange, items, item, onItemChange, system, systemLabel = "System", profile, status, className }: {
+export function SideNav({ brand = "homeserver", projects, project, onProjectChange, items, item, onItemChange, system, systemLabel = "System", profile, className }: {
   brand?: React.ReactNode;
   projects: NavProject[];
   project: string;
@@ -28,8 +28,6 @@ export function SideNav({ brand = "homeserver", projects, project, onProjectChan
   systemLabel?: string;
   /** 바닥 프로필 줄 — 아바타 + 이름 + 부연 + 끝 슬롯(보통 Menu 트리거). */
   profile?: { name: string; sub?: React.ReactNode; end?: React.ReactNode; onClick?: () => void };
-  /** 프로필 위 한 줄 — 호스트 상태처럼 늘 보여야 하는 것. */
-  status?: React.ReactNode;
   className?: string;
 }) {
   return (
@@ -57,11 +55,9 @@ export function SideNav({ brand = "homeserver", projects, project, onProjectChan
         <p className="px-3 pb-1 text-caption text-mute">{systemLabel}</p>
         <NavList items={system} value={item} onValueChange={(v) => onItemChange?.(v)} />
       </>}
-      {(profile || status) && (
+      {profile && (
         <div className="mt-auto pt-3">
-          {status && <div className="px-3 pb-2 text-caption">{status}</div>}
-          {profile && (
-            <>
+          <>
               <Separator className="mb-1" />
               {/* 프로필 줄 — 다른 행과 같은 문법(아바타 + 이름 15/500 + 부연 13 + 끝 슬롯) */}
               <button type="button" onClick={profile.onClick} className="flex w-full items-center gap-3 rounded-control px-2 py-2 text-start interactive">
@@ -72,8 +68,7 @@ export function SideNav({ brand = "homeserver", projects, project, onProjectChan
                 </span>
                 {profile.end}
               </button>
-            </>
-          )}
+          </>
         </div>
       )}
     </nav>
