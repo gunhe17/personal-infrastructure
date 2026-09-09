@@ -1,4 +1,4 @@
-import { AppShell, Badge, Button, Card, cn, Dot, IconText, ListRow, Meter, NOW, PageHeading, Progress, RANK, SectionHeading, StatusDot, StorageCard, Tile, AreaChart } from "@/ui";
+import { AppShell, AreaChart, Badge, Button, Card, cn, Dot, Icon, IconText, KeyValue, ListRow, Meter, NOW, PageHeading, Progress, RANK, SectionHeading, Sparkline, StatusDot, StorageCard, Tile } from "@/ui";
 import { useState } from "react";
 
 // StorageCard Lab — 디스크를 정밀하게 보기 위한 후보들(사용자 요청 2026-09-09). 확정되면 유기체로 옮긴다.
@@ -6,15 +6,20 @@ const GB = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1)} TB` : v >= 10 ?
 const AX = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1)}T` : `${Math.round(v)}G`); // 눈금은 짧게 — 36px 열에서 접히지 않게
 const day = (n: number) => (n >= 365 ? `${Math.floor(n / 365)}년 ${Math.floor((n % 365) / 30)}개월` : n >= 60 ? `${Math.floor(n / 30)}개월` : `${n}일`);
 
+// 내장 디스크는 차오르는 중(388→409 GB) — 상태·추세 변형이 실제로 보이게 한 가짜 값.
 /** 30일 용량 추이 — 지금까지 자란 만큼으로 남은 날을 뽑는다(선형). */
-const HIST = { disk: Array.from({ length: 30 }, (_, i) => Math.round((92 + i * 0.74) * 10) / 10), ssd: Array.from({ length: 30 }, (_, i) => Math.round((548 + i * 3.0) * 10) / 10) };
+const HIST = { disk: Array.from({ length: 30 }, (_, i) => Math.round((388 + i * 0.74) * 10) / 10), ssd: Array.from({ length: 30 }, (_, i) => Math.round((548 + i * 3.0) * 10) / 10) };
 const growth = (h: number[]) => (h[h.length - 1] - h[0]) / (h.length - 1); // GB/일
 const daysLeft = (h: number[], total: number) => Math.max(0, Math.round((total - h[h.length - 1]) / (growth(h) || 0.01)));
 
+const HDD = Array.from({ length: 30 }, (_, i) => Math.round((1150 + i * 1.9) * 10) / 10);
 const DEVICES = [
-  { id: "disk", title: "Internal disk", mount: "/", dev: "nvme0n1p2", total: 512, hist: HIST.disk, parts: [{ label: "Images", value: 84 }, { label: "System", value: 24 }, { label: "Logs", value: 6.3 }], rows: [{ name: "worker", value: 3.1 }, { name: "api", value: 1.8 }, { name: "edge", value: 0.9 }], rowsLabel: "Top log writers" },
-  { id: "ssd", title: "External SSD", mount: "/mnt/ssd", dev: "sda1", total: 2000, hist: HIST.ssd, parts: [{ label: "Other", value: 410 }, { label: "Backups", value: 132 }, { label: "Volumes", value: 96 }], rows: [{ name: "postgres", value: 46 }, { name: "worker", value: 38 }, { name: "api", value: 12 }], rowsLabel: "Largest volumes" },
+  { id: "disk", title: "Internal disk", mount: "/", dev: "nvme0n1p2", kind: "NVMe SSD", total: 512, hist: HIST.disk, parts: [{ label: "Images", value: 84 }, { label: "System", value: 24 }, { label: "Logs", value: 6.3 }], rows: [{ name: "worker", value: 3.1 }, { name: "api", value: 1.8 }, { name: "edge", value: 0.9 }], rowsLabel: "Top log writers", io: "2.1 MB/s", reclaim: 20.5 },
+  { id: "ssd", title: "External SSD", mount: "/mnt/ssd", dev: "sda1", kind: "USB SSD", total: 2000, hist: HIST.ssd, parts: [{ label: "Other", value: 410 }, { label: "Backups", value: 132 }, { label: "Volumes", value: 96 }], rows: [{ name: "postgres", value: 46 }, { name: "worker", value: 38 }, { name: "api", value: 12 }], rowsLabel: "Largest volumes", io: "9.0 MB/s", reclaim: 47.8 },
+  { id: "hdd", title: "Backup HDD", mount: "/mnt/backup", dev: "sdb1", kind: "USB HDD", total: 4000, hist: HDD, parts: [{ label: "Archives", value: 1150 }, { label: "Snapshots", value: 54 }], rows: [{ name: "postgres", value: 620 }, { name: "worker", value: 410 }, { name: "api", value: 120 }], rowsLabel: "Largest archives", io: "0.2 MB/s", reclaim: 41 },
 ];
+const used = (d: (typeof DEVICES)[number]) => d.hist[d.hist.length - 1];
+const tone = (d: (typeof DEVICES)[number]) => (used(d) / d.total > 0.8 ? "var(--bad)" : used(d) / d.total > 0.6 ? "var(--warn)" : NOW);
 
 const RECLAIM = [
   { name: "Dangling images", value: 18.4, note: "12 layers · last used 21d ago", tone: "progress" as const },
@@ -115,24 +120,145 @@ function D() {
   );
 }
 
-/** E — 장치 목록. SSD 를 더 꽂아도 줄만 늘어난다. */
-function E() {
+/** 장치 이름 칸 — 다섯 변형이 공유한다. */
+function DevName({ d, sub }: { d: (typeof DEVICES)[number]; sub?: React.ReactNode }) {
   return (
-    <Card title="Devices" subtitle="3 mounts">
+    <span className="min-w-0">
+      <span className="block truncate text-body font-medium text-text">{d.title}</span>
+      <span className="block truncate font-mono text-caption text-mute">{sub ?? `${d.mount} · ${d.dev}`}</span>
+    </span>
+  );
+}
+const freeCol = (d: (typeof DEVICES)[number]) => (
+  <span className="justify-self-end text-end">
+    <span className="block font-mono text-body tabular-nums text-text">{GB(d.total - used(d))} free</span>
+    <span className="block text-caption text-mute">of {GB(d.total)}</span>
+  </span>
+);
+
+/** E1 — 지금 것. 이름 · 사용률 막대 · 여유. 가장 짧다. */
+function E1() {
+  return (
+    <Card title="Devices" subtitle={`${DEVICES.length} mounts · ${GB(DEVICES.reduce((a, d) => a + d.total - used(d), 0))} free in total`}>
       <div className="divide-y divide-line">
-        {[...DEVICES, { id: "usb", title: "Backup HDD", mount: "/mnt/backup", dev: "sdb1", total: 4000, hist: [1180, 1204], parts: [{ label: "Archives", value: 1204 }], rows: [], rowsLabel: "" }].map((d) => {
-          const used = d.hist[d.hist.length - 1];
+        {DEVICES.map((d) => (
+          <div key={d.id} className="grid grid-cols-[200px_1fr_140px] items-center gap-4 py-4">
+            <DevName d={d} />
+            <Progress value={(used(d) / d.total) * 100} color={tone(d)} className="[&>div:first-child]:hidden" />
+            {freeCol(d)}
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+/** E2 — 막대를 종류로 쪼갠다. 한 줄에서 "무엇이 차지하나" 까지 읽힌다. */
+function E2() {
+  return (
+    <Card title="Devices" subtitle="Bar is split by kind — images · volumes · backups">
+      <div className="divide-y divide-line">
+        {DEVICES.map((d) => (
+          <div key={d.id} className="grid grid-cols-[200px_1fr_140px] items-center gap-4 py-4">
+            <DevName d={d} />
+            <span className="min-w-0">
+              <span className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-card-3">
+                {d.parts.map((p, i) => <span key={p.label} className="h-full rounded-full move" style={{ width: `${(p.value / d.total) * 100}%`, background: RANK[i % RANK.length] }} />)}
+              </span>
+              <span className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                {d.parts.map((p, i) => <span key={p.label} className="inline-flex items-center gap-1.5 whitespace-nowrap text-caption text-mute"><span className="size-1.5 rounded-full" style={{ background: RANK[i % RANK.length] }} />{p.label} <span className="font-mono tabular-nums text-text">{GB(p.value)}</span></span>)}
+              </span>
+            </span>
+            {freeCol(d)}
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+/** E3 — 추세를 넣는다. 30일 스파크라인 + 남은 날. "언제 손대야 하나" 가 목록에서 바로. */
+function E3() {
+  return (
+    <Card title="Devices" subtitle="30-day trend and runway per mount">
+      <div className="divide-y divide-line">
+        {DEVICES.map((d) => {
+          const left = daysLeft(d.hist, d.total), warn = left < 180;
           return (
-            <div key={d.id} className="grid grid-cols-[200px_1fr_140px] items-center gap-4 py-4">
-              <span>
-                <span className="block text-body font-medium text-text">{d.title}</span>
-                <span className="block font-mono text-caption text-mute">{d.mount} · {d.dev}</span>
+            <div key={d.id} className="grid grid-cols-[180px_1fr_120px_140px] items-center gap-4 py-4">
+              <DevName d={d} />
+              <span className="min-w-0">
+                <Progress value={(used(d) / d.total) * 100} color={tone(d)} className="[&>div:first-child]:hidden" />
+                <span className="mt-2 block text-caption text-mute">+{growth(d.hist).toFixed(1)} GB/day</span>
               </span>
-              <Progress value={(used / d.total) * 100} color={used / d.total > 0.8 ? "var(--warn)" : NOW} className="[&>div:first-child]:hidden" />
+              <Sparkline fluid points={d.hist} tone={warn ? "warn" : "accent"} height={28} className="block w-full" />
               <span className="justify-self-end text-end">
-                <span className="block font-mono text-body tabular-nums text-text">{GB(d.total - used)} free</span>
-                <span className="block text-caption text-mute">of {GB(d.total)}</span>
+                <span className={cn("block text-body tabular-nums", warn ? "text-warn" : "text-text")}>{day(left)}</span>
+                <span className="block text-caption text-mute">until full</span>
               </span>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+/** E4 — 펼치는 행. 목록은 그대로 짧고, 필요한 장치만 그 자리에서 세부를 연다. */
+function E4() {
+  const [open, setOpen] = useState<string | null>("ssd");
+  return (
+    <Card title="Devices" subtitle="Click a row for detail">
+      <div className="divide-y divide-line">
+        {DEVICES.map((d) => (
+          <div key={d.id}>
+            <button type="button" onClick={() => setOpen(open === d.id ? null : d.id)} className="grid w-full grid-cols-[200px_1fr_140px_auto] items-center gap-4 py-4 text-start interactive -mx-3 px-3 rounded-control">
+              <DevName d={d} />
+              <Progress value={(used(d) / d.total) * 100} color={tone(d)} className="[&>div:first-child]:hidden" />
+              {freeCol(d)}
+              <Icon name="chevronDown" size="sm" className={cn("tint move text-mute", open === d.id && "rotate-180")} />
+            </button>
+            {open === d.id && (
+              <div className="mb-4 rounded-control bg-card-2 p-5 appear surface-2">
+                <div className="grid gap-6 md:grid-cols-2">
+                  <Meter label="Usage" total={d.total} format={GB} parts={d.parts.map((p, i) => ({ ...p, color: RANK[i % RANK.length] }))} />
+                  <KeyValue className="grid-cols-[112px_1fr]" items={[{ label: "Device", value: `${d.dev} · ${d.kind}`, mono: true }, { label: "I/O now", value: d.io, mono: true }, { label: "Runway", value: `${day(daysLeft(d.hist, d.total))} at +${growth(d.hist).toFixed(1)} GB/day` }, { label: "Reclaimable", value: GB(d.reclaim), mono: true }]} />
+                </div>
+                <p className="mt-6 mb-3 text-caption text-mute">{d.rowsLabel}</p>
+                <div className="space-y-2">
+                  {d.rows.map((r, i) => (
+                    <div key={r.name} className="grid grid-cols-[96px_1fr_72px] items-center gap-3">
+                      <span className="flex items-center gap-2 truncate text-body text-text"><span className="size-2 shrink-0 rounded-full" style={{ background: RANK[i % RANK.length] }} />{r.name}</span>
+                      <Progress value={(r.value / Math.max(...d.rows.map((x) => x.value))) * 100} color={RANK[i % RANK.length]} className="[&>div:first-child]:hidden" />
+                      <span className="text-end font-mono text-caption tabular-nums text-mute">{GB(r.value)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+/** E5 — 상태 먼저. 손봐야 할 장치가 위로 올라오고 배지가 이유를 말한다. */
+function E5() {
+  const rank = (d: (typeof DEVICES)[number]) => daysLeft(d.hist, d.total);
+  const sorted = [...DEVICES].sort((a, b) => rank(a) - rank(b));
+  return (
+    <Card title="Devices" subtitle="Sorted by runway — the one to touch first is on top">
+      <div className="divide-y divide-line">
+        {sorted.map((d) => {
+          const left = daysLeft(d.hist, d.total), pct = (used(d) / d.total) * 100;
+          const state = left < 180 ? { tone: "progress" as const, text: `fills in ${day(left)}` } : pct > 60 ? { tone: "progress" as const, text: `${Math.round(pct)}% used` } : { tone: "running" as const, text: "healthy" };
+          return (
+            <div key={d.id} className="grid grid-cols-[200px_150px_1fr_140px] items-center gap-4 py-4">
+              <DevName d={d} sub={`${d.mount} · ${d.kind}`} />
+              <StatusDot tone={state.tone}>{state.text}</StatusDot>
+              <Progress value={pct} color={tone(d)} className="[&>div:first-child]:hidden" />
+              {freeCol(d)}
             </div>
           );
         })}
@@ -150,7 +276,11 @@ export function StorageLab() {
         <Option id="s-b" title="B · Runway — when does it fill" from="30일 추이 + 하루 증가량으로 남은 날을 계산해 큰 숫자로" fit="용량은 며칠 단위로 변한다. '언제 손대야 하나' 가 진짜 질문"><B /></Option>
         <Option id="s-c" title="C · Reclaimable — what can go" from="회수 가능 용량을 하나로 모으고 항목마다 근거와 동작" fit="꽉 찼을 때 바로 누를 것이 있다. dangling·오래된 백업·고아 볼륨"><C /></Option>
         <Option id="s-d" title="D · Volumes — project and backup" from="볼륨마다 프로젝트 연결·크기·마지막 백업" fit="고아 볼륨과 백업 안 된 볼륨을 찾는다"><D /></Option>
-        <Option id="s-e" title="E · Devices — one row per mount" from="장치 하나에 한 줄, 여유 공간 기준" fit="SSD 를 더 꽂아도 줄만 는다. 카드 격자보다 확장에 강하다"><E /></Option>
+        <Option id="s-e1" title="E1 · Devices — plain row" from="이름 · 사용률 막대 · 여유. 장치 하나에 한 줄" fit="장치가 많아도 화면이 안 는다. 가장 짧은 형태"><E1 /></Option>
+        <Option id="s-e2" title="E2 · Split bar — what fills it" from="막대를 종류(이미지·볼륨·백업)로 쪼개고 아래 색 점 범례" fit="한 줄에서 '무엇이 차지하나' 까지. 줄 높이가 조금 는다"><E2 /></Option>
+        <Option id="s-e3" title="E3 · Trend — 30일 추이와 남은 날" from="스파크라인 + GB/일 + 남은 날. 임박한 장치는 warn 색" fit="'언제 손대야 하나' 를 목록에서 바로. 네 열이 필요하다"><E3 /></Option>
+        <Option id="s-e4" title="E4 · Expandable — 그 자리에서 세부" from="행을 누르면 종류 Meter · 장치 정보 · 상위 항목이 펼쳐진다" fit="목록은 짧게 두고 필요한 장치만 깊게. 별도 화면이 필요 없다"><E4 /></Option>
+        <Option id="s-e5" title="E5 · By state — 손볼 것부터" from="남은 날 순으로 정렬하고 상태 점이 이유를 말한다" fit="장치가 여럿일 때 무엇부터 볼지 화면이 정해 준다"><E5 /></Option>
       </div>
     </AppShell>
   );
