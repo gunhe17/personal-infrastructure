@@ -318,6 +318,7 @@ export function Canvas() {
         <div className="absolute bottom-5 end-5 z-20 flex items-center gap-1 rounded-popup bg-card p-1 ring-1 ring-line" role="group" aria-label="캔버스 도구">
           <IconButton size="sm" label={theme === "dark" ? "라이트로" : "다크로"} icon={theme === "dark" ? "moon" : "sun"} onClick={() => setTheme(theme === "dark" ? "light" : "dark")} />
           <IconButton size="sm" label="Lab" icon="insight" onClick={() => { location.hash = "#lab"; }} />
+          <IconButton size="sm" label="Storage Lab" icon="volume" onClick={() => { location.hash = "#storage"; }} />
           <span className="mx-0.5 h-5 w-px bg-line" />
           <IconButton size="sm" label="축소" icon="remove" onClick={() => animateTo(zoomRef.current / 1.2)} />
           <Button size="sm" variant="ghost" aria-label="원래 크기" onClick={() => animateTo(1)} className="min-w-12 px-1.5 font-mono tabular-nums">{label}%</Button>
