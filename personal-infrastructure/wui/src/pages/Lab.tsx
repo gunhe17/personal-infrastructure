@@ -146,13 +146,40 @@ function OptionD({ m }: { m: Metrics }) {
   );
 }
 
+
+/** 선택된 구성 — CPU · 메모리 · 네트워크는 시계열, 디스크 · 메모리는 칸 나누기. 나머지 자리는 비워 둔다. */
+function ResourceScreen({ m }: { m: Metrics }) {
+  const H = m.h, CT = m.ct;
+  const [range, setRange] = useState("24h");
+  const X = range === "1h" ? ["-60m", "-45m", "-30m", "-15m", "지금"] : range === "7d" ? ["월", "화", "수", "목", "금", "토", "일"] : X24;
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-5"><StatusDot tone="running">엣지 up</StatusDot><IconText icon="clock">가동 14일 6시간</IconText><IconText icon="server">부하 {(last(H.cpu) / 12).toFixed(1)} · 8 코어</IconText></div>
+        <FilterTabs value={range} onValueChange={setRange} items={[{ value: "1h", label: "1시간" }, { value: "24h", label: "24시간" }, { value: "7d", label: "7일" }]} />
+      </div>
+      <div className="grid grid-cols-3 gap-5">
+        <Card title="CPU" subtitle={`${Math.round(last(H.cpu))}% · 호스트와 worker`}><div className="ps-8"><AreaChart series={[{ name: "호스트", points: H.cpu, tone: "accent" }, { name: "worker", points: CT[2].spark.concat(CT[2].spark), tone: "warn" }]} max={100} height={140} format={(v) => `${v}%`} xLabels={X} /></div></Card>
+        <Card title="메모리" subtitle={`${last(H.mem).toFixed(1)} / 16 GB`}><div className="ps-8"><AreaChart series={[{ name: "사용", points: H.mem, tone: "info" }]} max={16} height={140} format={(v) => `${v}G`} xLabels={X} /></div></Card>
+        <Card title="네트워크" subtitle={`↓${Math.round(last(H.net_in))} ↑${Math.round(last(H.net_out))} Mb/s`}><div className="ps-8"><AreaChart series={[{ name: "들어옴", points: H.net_in, tone: "good" }, { name: "나감", points: H.net_out, tone: "accent" }]} height={140} format={(v) => `${v}`} xLabels={X} /></div></Card>
+      </div>
+      <div className="grid grid-cols-2 gap-5">
+        <Card title="디스크" subtitle="512 GB 중 · 이미지 · 볼륨 · 백업"><Meter total={512} unit="G" parts={[{ label: "이미지", value: 84, tone: "info" }, { label: "볼륨", value: Math.round(last(H.disk) - 84 - 32), tone: "running" }, { label: "백업", value: 32, tone: "progress" }]} /></Card>
+        <Card title="메모리" subtitle="16 GB 중 · 컨테이너별"><Meter total={16} unit="G" parts={[{ label: "api", value: CT[0].mem, tone: "info" }, { label: "worker", value: CT[2].mem, tone: "progress" }, { label: "postgres", value: CT[3].mem, tone: "running" }, { label: "그 외", value: Math.round((CT[1].mem + CT[4].mem + 0.6) * 10) / 10, tone: "idle" }]} /></Card>
+      </div>
+    </div>
+  );
+}
+
 export function Lab() {
   const [live, setLive] = useState(true);
   const m = useLive(live);
   return (
     <AppShell>
-      <PageHeading crumbs={[{ label: "캔버스", href: "#" }, { label: "Lab" }]} title="이 PC 의 리소스 현황 — 후보 넷" meta={<><IconText icon="insight">같은 데이터, 네 가지 표현. 하나를 고르면 홈 화면 유기체가 된다.</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `실시간 흉내 · 1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<Switch checked={live} onCheckedChange={setLive} label="실시간" boxed />} />
-      <div className="mt-8">
+      <PageHeading crumbs={[{ label: "캔버스", href: "#" }, { label: "Lab" }]} title="리소스" meta={<><IconText icon="insight">CPU · 메모리 · 네트워크는 시계열, 디스크 · 메모리는 칸 나누기 — 사용자 선택(2026-09-09)</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `실시간 흉내 · 1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<Switch checked={live} onCheckedChange={setLive} label="실시간" boxed />} />
+      <div className="mt-8"><ResourceScreen m={m} /></div>
+      <div className="mt-24">
+        <SectionHeading title="후보 넷 (참고)" description="위 화면을 고르기 전 비교했던 네 표현. 같은 실시간 데이터를 읽는다." />
         <Option id="a" title="A · 지표 카드 + 스파크라인" from="Beszel 의 네 핵심 지표 · PatternFly KPI 카드(큰 숫자 + 스파크라인)" fit="한눈에 '지금' 을 보고 싶을 때. 추세는 힌트만"><OptionA m={m} /></Option>
         <Option id="b" title="B · 링 게이지 + 칸 나누기" from="Synology · Proxmox 의 사용률 원 · Tremor Category Bar" fit="'얼마나 찼나' 가 핵심일 때. 디스크·메모리를 누가 먹는지까지"><OptionB m={m} /></Option>
         <Option id="c" title="C · 시계열 그래프" from="Netdata · Grafana 의 시간축 · 범위 선택" fit="'언제 튀었나' 를 찾을 때. 밤새 무슨 일이 있었는지"><OptionC m={m} /></Option>
