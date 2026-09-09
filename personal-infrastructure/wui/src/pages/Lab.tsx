@@ -107,13 +107,13 @@ const hostOf = (H: Metrics["h"], id: "cpu" | "mem") => ({
   mem: { value: `${last(H.mem).toFixed(1)} GB`, sub: "16 GB 중", series: [{ name: "사용", points: H.mem, tone: "info" as const }], total: H.mem, max: 16, pct: (last(H.mem) / 16) * 100, tv: `${last(H.mem).toFixed(1)} GB`, fmt: (v: number) => `${v}G` },
 }[id]);
 
-/** 띠 크기 규격 — 제목 줄(작게 + 우측 토글) → 그래프(우측 끝에 현재값) 를 왼쪽에, 가로 쌓은 띠 + 상위 3 을 오른쪽에(사용자 지정 2026-09-09). 2열은 창 1024 이상에서만(사용자 결정 2026-09-09: 전환점은 창 기준으로 통일). */
-type Size = { pad: string; gap: string; cols: string; chart: number; now: number; name: string; value: string; row: string; dot: string; rows: string };
+/** 띠 크기 규격 — 제목 줄(제목 + 바로 오른쪽 토글) → 그래프(우측 끝에 현재값) 를 왼쪽에, 가로 쌓은 띠 + 상위 3 을 오른쪽에(사용자 지정 2026-09-09). 2열은 창 1024 이상에서만(사용자 결정 2026-09-09: 전환점은 창 기준으로 통일). */
+type Size = { pad: string; gap: string; cols: string; chart: number; now: number; name: string; seg: string; value: string; row: string; dot: string; rows: string };
 const SIZES = {
-  base:  { pad: "px-4 py-4 sm:px-6 sm:py-5", gap: "lg:gap-x-8",  cols: "lg:grid-cols-[1fr_280px]", chart: 64, now: 104, name: "text-body",    value: "text-body-lg font-medium",  row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
-  tight: { pad: "px-4 py-4 sm:px-5", gap: "lg:gap-x-6",  cols: "lg:grid-cols-[1fr_240px]", chart: 48, now: 92,  name: "text-caption", value: "text-body font-medium",     row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0" },
-  roomy: { pad: "px-4 py-5 sm:px-7 sm:py-7", gap: "lg:gap-x-10", cols: "lg:grid-cols-[1fr_320px]", chart: 88, now: 120, name: "text-body",    value: "text-title",                row: "text-caption",          dot: "size-2",   rows: "space-y-1" },
-  chart: { pad: "px-4 py-4 sm:px-6 sm:py-5", gap: "lg:gap-x-6",  cols: "lg:grid-cols-[1fr_216px]", chart: 80, now: 104, name: "text-caption", value: "text-body-lg font-medium",  row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
+  base:  { pad: "px-4 py-4 sm:px-6 sm:py-5", gap: "lg:gap-x-8",  cols: "lg:grid-cols-[1fr_280px]", chart: 64, now: 104, name: "text-body",    seg: "[&>button]:text-body [&>button]:font-normal",    value: "text-body-lg font-medium",  row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
+  tight: { pad: "px-4 py-4 sm:px-5", gap: "lg:gap-x-6",  cols: "lg:grid-cols-[1fr_240px]", chart: 48, now: 92,  name: "text-caption", seg: "[&>button]:text-caption [&>button]:font-normal", value: "text-body font-medium",     row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0" },
+  roomy: { pad: "px-4 py-5 sm:px-7 sm:py-7", gap: "lg:gap-x-10", cols: "lg:grid-cols-[1fr_320px]", chart: 88, now: 120, name: "text-body",    seg: "[&>button]:text-body [&>button]:font-normal",    value: "text-title",                row: "text-caption",          dot: "size-2",   rows: "space-y-1" },
+  chart: { pad: "px-4 py-4 sm:px-6 sm:py-5", gap: "lg:gap-x-6",  cols: "lg:grid-cols-[1fr_216px]", chart: 80, now: 104, name: "text-caption", seg: "[&>button]:text-caption [&>button]:font-normal", value: "text-body-lg font-medium",  row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
 } satisfies Record<string, Size>;
 type SizeId = keyof typeof SIZES;
 const DirCtx = createContext<{ dir: Dir; setDir: (d: Dir) => void; marks: boolean }>({ dir: "sum", setDir: () => {}, marks: true });
@@ -140,10 +140,10 @@ function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?:
   return (
     <div className={cn("grid gap-x-6 gap-y-4", z.cols, z.gap)}>
       <div>
-        {/* 제목 줄 — 작게, 우측에 작은 토글 */}
-        <div className="flex h-6 items-center justify-between gap-3">
+        {/* 제목 줄 — 제목 바로 오른쪽에 토글, 글자 크기는 제목과 같게(사용자 지정 2026-09-09) */}
+        <div className="flex min-h-8 items-center gap-3">
           <span className={cn(z.name, "text-mute")}>{r.label}</span>
-          {D && <FilterTabs size="sm" value={dir} onValueChange={setDir} items={[{ value: "sum", label: "합" }, { value: "a", label: D.a.label }, { value: "b", label: D.b.label }]} />}
+          {D && <FilterTabs size="sm" value={dir} onValueChange={setDir} className={z.seg} items={[{ value: "sum", label: "합" }, { value: "a", label: D.a.label }, { value: "b", label: D.b.label }]} />}
         </div>
         {/* 메인 그래프 — 우측 끝 선 높이에 현재값 */}
         <div className="mt-2"><AreaChart series={series} max={h.max} height={z.chart} format={h.fmt} formatMark={r.fmt} legend={false} annotate={g.marks} nowLabel={h.value} nowClass={z.value} nowColor={NOW} nowWidth={z.now} /></div>
