@@ -1,6 +1,6 @@
 import { AppShell, AreaChart, Card, cn, DeviceList, Dot, IconText, NOW, PageHeading, Progress, SectionHeading, Sparkline } from "@/ui";
 
-// StorageCard Lab — 디스크를 정밀하게 보기 위한 후보들(사용자 요청 2026-09-09). 확정되면 유기체로 옮긴다.
+// Devices Lab — 장치 한 줄을 어떻게 표현할 것인가. V1 이 확정되어 `DeviceList` 로 승격됐고, V2~V5 는 비교용으로 남는다.
 const GB = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1)} TB` : v >= 10 ? `${Math.round(v)} GB` : `${v.toFixed(1)} GB`);
 const AX = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1)}T` : `${Math.round(v)}G`); // 눈금은 짧게 — 36px 열에서 접히지 않게
 const day = (n: number) => (n >= 365 ? `${Math.floor(n / 365)}년 ${Math.floor((n % 365) / 30)}개월` : n >= 60 ? `${Math.floor(n / 30)}개월` : `${n}일`);

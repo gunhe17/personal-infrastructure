@@ -15,7 +15,7 @@ const COLOR: Record<DevTone, string> = { accent: NOW, warn: "var(--warn)", bad: 
 /**
  * [유기체] DeviceList — 마운트된 저장 장치를 한 줄씩(확정 규격, 사용자 결정 2026-09-09: StorageLab V1).
  * 이름 180 · 막대 위 왼쪽에 사용량 오른쪽에 총량 · 오른쪽 160 에 변화 그래프와 축 양 끝 라벨.
- * 장치가 늘어도 줄만 는다. 종류별 구성은 `StorageCard`, 지금 흐르는 양은 `ResourceBand` 가 맡는다.
+ * 장치가 늘어도 줄만 는다. 지금 흐르는 양은 `ResourceBand` 가 맡는다.
  */
 export function DeviceList({ title = "Devices", devices, span = "30d", format = GB, className }: {
   title?: string;

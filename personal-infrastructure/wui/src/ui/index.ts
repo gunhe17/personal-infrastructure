@@ -84,7 +84,6 @@ export { TopProjects } from "./3-organisms/top-projects";
 export { EdgeRequests } from "./3-organisms/edge-requests";
 export { RecentDeploys } from "./3-organisms/recent-deploys";
 export { ResourceBand, ResourceBands, bandParts, type BandPart } from "./3-organisms/resource-band";
-export { StorageCard } from "./3-organisms/storage-card";
 export { DeviceList, deviceColor, deviceTone, formatGB, type Device } from "./3-organisms/device-list";
 export { PageHeading } from "./3-organisms/page-heading";
 export { AppShell } from "./3-organisms/app-shell";

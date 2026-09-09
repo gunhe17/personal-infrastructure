@@ -1,4 +1,4 @@
-import { AppShell, bandParts, Dot, Switch, IconText, PageHeading, ResourceBand, ResourceBands, StorageCard } from "@/ui";
+import { AppShell, bandParts, DeviceList, Dot, Switch, IconText, PageHeading, ResourceBand, ResourceBands } from "@/ui";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 // Lab — 결정 전 후보를 실제 크기로 나란히 본다. 여기 있는 것은 아직 키트가 아니다. 선택되면 유기체/템플릿으로 옮긴다.
@@ -94,7 +94,7 @@ const hostOf = (H: Metrics["h"], id: "cpu" | "mem") => ({
   mem: { value: `${last(H.mem).toFixed(1)} GB`, sub: "of 16 GB", series: [{ name: "Used", points: H.mem, tone: "info" as const }], total: H.mem, max: 16, pct: (last(H.mem) / 16) * 100, tv: `${last(H.mem).toFixed(1)} GB`, fmt: (v: number) => `${v}G` },
 }[id]);
 
-/** 확정 규격(사용자 결정 2026-09-09): Lab S1 Base · Ticks 를 `ResourceBand`/`StorageCard` 유기체로 승격했다. 이 페이지는 이제 가짜 데이터를 그 유기체에 먹이는 화면일 뿐이다. */
+/** 확정 규격(사용자 결정 2026-09-09): Lab S1 Base · Ticks 를 `ResourceBand`/`DeviceList` 유기체로 승격했다. 이 페이지는 이제 가짜 데이터를 그 유기체에 먹이는 화면일 뿐이다. */
 
 function Band({ m, r }: { m: Metrics; r: (typeof RES)[number] }) {
   const [own, setOwn] = useState<Dir>("sum");
@@ -114,19 +114,15 @@ function Band({ m, r }: { m: Metrics; r: (typeof RES)[number] }) {
   );
 }
 
-/** 저장 장치 둘 — 내장은 시스템·이미지·로그, 외장 SSD 는 볼륨·백업·기타. 볼륨은 시뮬레이션의 디스크 증가분을 따라 천천히 찬다. */
+/** 저장 장치 — 마운트 목록 한 장(사용자 결정 2026-09-09: StorageCard 제거). 용량은 시뮬레이션의 디스크 증가분을 따라 천천히 찬다. */
 function StorageRow({ m }: { m: Metrics }) {
   const vol = Math.round(last(m.h.disk) - 116); // 시뮬레이션의 "디스크" 는 볼륨 합으로 쓴다
-  const log = Math.round((6.3 + m.tick * 0.0002) * 10) / 10;
+  const rise = (base: number, step: number) => Array.from({ length: 30 }, (_, i) => Math.round((base + i * step) * 10) / 10);
   return (
-    <div className="grid gap-5 md:grid-cols-2">
-      <StorageCard title="Internal disk" mount="/" total={512}
-        parts={[{ label: "Images", value: 84 }, { label: "System", value: 24 }, { label: "Logs", value: log }]}
-        rowsLabel="Top log writers" rows={[{ name: "worker", value: Math.round((3.1 + m.tick * 0.0001) * 10) / 10 }, { name: "api", value: 1.8 }, { name: "edge", value: 0.9 }]} />
-      <StorageCard title="External SSD" mount="/mnt/ssd" total={2000}
-        parts={[{ label: "Other", value: 410 }, { label: "Backups", value: 132 }, { label: "Volumes", value: vol }]}
-        rowsLabel="Largest volumes" rows={[...m.ct].sort((a, b) => b.vol - a.vol).slice(0, 3).map((c) => ({ name: c.name, value: c.vol }))} />
-    </div>
+    <DeviceList devices={[
+      { name: "Internal disk", used: 114 + m.tick * 0.0002, total: 512, history: rise(92, 0.74) },
+      { name: "External SSD", used: 542 + vol, total: 2000, history: rise(548, 3.0) },
+    ]} />
   );
 }
 
