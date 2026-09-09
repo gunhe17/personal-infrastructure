@@ -1,4 +1,4 @@
-import { AreaChart, AppShell, Card, cn, Dot, Switch, IconText, Meter, PageHeading, Progress, SectionHeading } from "@/ui";
+import { AreaChart, AppShell, Card, cn, Dot, FilterTabs, Switch, IconText, Meter, PageHeading, Progress, SectionHeading, StatusDot } from "@/ui";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 // Lab — 결정 전 후보를 실제 크기로 나란히 본다. 여기 있는 것은 아직 키트가 아니다. 선택되면 유기체/템플릿으로 옮긴다.
@@ -137,16 +137,28 @@ function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?:
   );
 }
 
-/** 디스크 용량 — 띠 밖의 카드(사용자 결정 2026-09-09: I/O 는 띠, 용량은 분리). 저량이라 시계열 대신 Meter(이미지·볼륨·백업) + 볼륨 큰 컨테이너 3. */
-function DiskCapacity({ m }: { m: Metrics }) {
-  const used = last(m.h.disk), img = 84, bak = 32, vol = Math.round(used - img - bak);
-  const top = [...m.ct].sort((a, b) => b.vol - a.vol).slice(0, 3);
+/** 저장 장치 카드 — 한정된 총량을 칸으로 나눈 Meter + 누가 많이 쓰나 상위 3. 내장 디스크·외장 SSD 가 같은 틀(사용자 결정 2026-09-09: I/O 는 띠, 용량은 분리, SSD 도 이 자리). */
+function Storage({ m, title, mount, total, parts, rows, unitRow }: { m: Metrics; title: string; mount: string; total: number; parts: { label: string; value: number; tone: "info" | "running" | "progress" | "idle" }[]; rows: { name: string; value: number }[]; unitRow: string }) {
+  const used = parts.reduce((a, p) => a + p.value, 0);
+  const max = Math.max(...rows.map((r) => r.value)) || 1;
+  const fmt = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)} TB` : `${Math.round(v)} GB`;
   return (
-    <Card title="디스크 용량" subtitle={`512 GB 중 ${Math.round(used)} GB · 남은 ${Math.round(512 - used)} GB`}>
-      <Meter label="쓰임새" total={512} unit="G" parts={[{ label: "이미지", value: img, tone: "info" }, { label: "볼륨", value: vol, tone: "running" }, { label: "백업", value: bak, tone: "progress" }]} />
-      <p className="mt-6 mb-3 text-caption text-mute">볼륨 큰 컨테이너</p>
-      <div className="space-y-2">{top.map((c) => <div key={c.name} className="grid grid-cols-[96px_1fr_72px] items-center gap-3"><span className="flex items-center gap-2 truncate text-body text-text"><span className="size-2 shrink-0 rounded-full" style={{ background: colorOfCt(m, c.name) }} />{c.name}</span><Progress value={(c.vol / vol) * 100} color={colorOfCt(m, c.name)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{c.vol} GB</span></div>)}</div>
+    <Card title={title} subtitle={`${fmt(total)} 중 ${fmt(used)} · 남은 ${fmt(total - used)}`} actions={<StatusDot tone="running" muted><span className="font-mono">{mount}</span></StatusDot>}>
+      <Meter label="쓰임새" total={total} unit="G" parts={parts} />
+      <p className="mt-6 mb-3 text-caption text-mute">{unitRow}</p>
+      <div className="space-y-2">{rows.map((c) => <div key={c.name} className="grid grid-cols-[96px_1fr_72px] items-center gap-3"><span className="flex items-center gap-2 truncate text-body text-text"><span className="size-2 shrink-0 rounded-full" style={{ background: colorOfCt(m, c.name) }} />{c.name}</span><Progress value={(c.value / max) * 100} color={colorOfCt(m, c.name)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{c.value < 10 ? c.value.toFixed(1) : Math.round(c.value)} GB</span></div>)}</div>
     </Card>
+  );
+}
+/** 저장 장치 둘 — 내장은 시스템·이미지·로그, 외장 SSD 는 볼륨·백업·기타. 볼륨은 시뮬레이션의 디스크 증가분을 따라 천천히 찬다. */
+function StorageRow({ m }: { m: Metrics }) {
+  const vol = Math.round(last(m.h.disk) - 116); // 시뮬레이션의 "디스크" 는 볼륨 합으로 쓴다
+  const log = 6.3 + m.tick * 0.0002;
+  return (
+    <div className="grid grid-cols-2 gap-5">
+      <Storage m={m} title="내장 디스크" mount="/" total={512} parts={[{ label: "시스템", value: 24, tone: "idle" }, { label: "이미지", value: 84, tone: "info" }, { label: "로그", value: Math.round(log * 10) / 10, tone: "progress" }]} unitRow="로그 많이 쌓는 컨테이너" rows={[{ name: "worker", value: 3.1 + m.tick * 0.0001 }, { name: "api", value: 1.8 }, { name: "edge", value: 0.9 }]} />
+      <Storage m={m} title="외장 SSD" mount="/mnt/ssd" total={2000} parts={[{ label: "볼륨", value: vol, tone: "running" }, { label: "백업", value: 132, tone: "progress" }, { label: "기타", value: 410, tone: "idle" }]} unitRow="볼륨 큰 컨테이너" rows={[...m.ct].sort((a, b) => b.vol - a.vol).slice(0, 3).map((c) => ({ name: c.name, value: c.vol }))} />
+    </div>
   );
 }
 
@@ -161,20 +173,18 @@ function V2({ m, sz = "base" }: { m: Metrics; sz?: SizeId }) {
 export function Lab() {
   const [live, setLive] = useState(true);
   const [split, setSplit] = useState(true);
+  const [sz, setSz] = useState<SizeId>("base");
   const m = useLive(live);
+  const up = 6 * 86400 + 4 * 3600 + m.tick;
   return (
     <SplitCtx.Provider value={split}>
     <AppShell>
-      <PageHeading crumbs={[{ label: "캔버스", href: "#" }, { label: "Lab" }]} title="리소스" meta={<><IconText icon="insight">가로 띠 4단 — 크기 규격 여섯</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `실시간 흉내 · 1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<><Switch checked={split} onCheckedChange={setSplit} label="컨테이너별" boxed /><Switch checked={live} onCheckedChange={setLive} label="실시간" boxed /></>} />
-      <div className="mt-8">
-        <Option id="v2" title="S1 · 기준" from="띠 안쪽 24/20 · 열 사이 32 · 이름 160 / 그래프 / 오른쪽 260 · 그래프 64 · 값 22 · 행 11/16" fit="지금 것. 카드 규격(안쪽 24)과 같은 호흡"><V2 m={m} /></Option>
-        <Option id="disk" title="디스크 용량 — 띠 밖 카드" from="띠는 유량(I/O)만, 용량은 저량이라 Meter 카드로 분리. 띠 카드 아래 격자에 반 폭" fit="꽉 참 위험과 '누가 디스크를 먹나' 를 한 카드에서. 90초 시계열이 필요 없다"><div className="grid grid-cols-2 gap-5"><DiskCapacity m={m} /></div></Option>
-        <Option id="v2t" title="S2 · 촘촘" from="안쪽 20/16 · 열 사이 24 · 128 / 그래프 / 220 · 그래프 48 · 값 17 · 행 11/16 붙임" fit="넷이 한 화면 위쪽에 들어가야 할 때. 아래에 다른 카드가 이어질 홈"><V2 m={m} sz="tight" /></Option>
-        <Option id="v2r" title="S3 · 여유" from="안쪽 28 · 열 사이 40 · 176 / 그래프 / 288 · 그래프 88(눈금 3) · 값 26 · 행 13 + 점 8" fit="리소스 화면이 이 카드 하나일 때. 큰 숫자가 주인공"><V2 m={m} sz="roomy" /></Option>
-        <Option id="v2c" title="S4 · 그래프 우선" from="이름 112 · 오른쪽 200 으로 좁혀 그래프에 폭을 주고 높이 72" fit="파형이 정보일 때. 이름·값은 caption 으로 물러난다"><V2 m={m} sz="chart" /></Option>
-        <Option id="v2h" title="S5 · 머리 한 줄" from="이름·값·부연을 그래프 위 한 줄로. 열은 둘(그래프 / 오른쪽 240) · 그래프 56" fit="폭이 좁아질 때(1024 이하)도 같은 구조. 세로는 S1 과 비슷"><V2 m={m} sz="head" /></Option>
-        <Option id="v2k" title="S6 · 카드 넷" from="line 대신 카드 넷(안쪽 24, 사이 20). 나머지는 S1" fit="리소스마다 독립 카드로 보이게. 다른 카드와 격자로 섞일 때"><V2 m={m} sz="cards" /></Option>
+      <PageHeading crumbs={[{ label: "홈", href: "#" }, { label: "리소스" }]} title="리소스" meta={<><IconText icon="server">homeserver · 8 코어 · 16 GB</IconText><IconText icon="clock">가동 {Math.floor(up / 86400)}일 {Math.floor((up % 86400) / 3600)}시간</IconText><IconText icon="project">컨테이너 {m.ct.length} 실행 중</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<><FilterTabs value={sz} onValueChange={(v) => setSz(v as SizeId)} items={[{ value: "base", label: "S1" }, { value: "tight", label: "S2" }, { value: "roomy", label: "S3" }, { value: "chart", label: "S4" }, { value: "head", label: "S5" }, { value: "cards", label: "S6" }]} /><Switch checked={split} onCheckedChange={setSplit} label="컨테이너별" boxed /><Switch checked={live} onCheckedChange={setLive} label="실시간" boxed /></>} />
+      <div className="mt-6 space-y-5">
+        <V2 m={m} sz={sz} />
+        <StorageRow m={m} />
       </div>
+      <Option id="spec" title="구성 — 실제 화면" from="AppShell + PageHeading(호스트·가동·컨테이너 수) · 띠 넷(S1–S6 는 머리 줄 세그먼트로 전환) · 저장 장치 둘(내장 디스크 / 외장 SSD, 같은 틀)" fit="띠는 유량, 카드는 저량. SSD 를 꽂으면 카드가 하나 더 붙는다. 새 API: 컨테이너 BlockIO · /proc/diskstats · docker system df -v · 마운트 목록"><span /></Option>
     </AppShell>
     </SplitCtx.Provider>
   );
