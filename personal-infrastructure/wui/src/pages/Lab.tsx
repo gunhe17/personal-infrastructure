@@ -72,39 +72,68 @@ function Option({ id, title, from, fit, children }: { id: string; title: string;
 type Res = "cpu" | "mem" | "disk" | "net";
 const fmtGB = (v: number) => v >= 1024 ? `${(v / 1024).toFixed(2)} TB` : v >= 1 ? `${v.toFixed(1)} GB` : `${Math.round(v * 1024)} MB`;
 // ── 한눈에 보기 — 네 리소스가 동시에 보이는 경우의 수 ─────────────────────────
-const RES: { id: Res; label: string; unit: (c: Ct) => string; pct: (c: Ct) => number; tone: (c: Ct) => "accent" | "good" | "warn" | "bad" }[] = [
-  { id: "cpu", label: "CPU", unit: (c) => `${Math.round(c.cpu)}%`, pct: (c) => c.cpu, tone: (c) => (c.cpu > 30 ? "warn" : "accent") },
-  { id: "mem", label: "메모리", unit: (c) => `${c.mem.toFixed(1)} GB`, pct: (c) => (c.mem / c.memLimit) * 100, tone: (c) => (c.mem / c.memLimit > 0.9 ? "bad" : "good") },
-  { id: "disk", label: "디스크", unit: (c) => `${(c.wrRate + c.rdRate).toFixed(1)} MB/s`, pct: (c) => Math.min(100, (c.wrRate + c.rdRate) * 5), tone: () => "accent" },
-  { id: "net", label: "네트워크", unit: (c) => `${(c.rxRate + c.txRate).toFixed(1)} Mb/s`, pct: (c) => Math.min(100, (c.rxRate + c.txRate) * 2), tone: () => "good" },
+const RES: { id: Res; label: string; unit: (c: Ct) => string; raw: (c: Ct) => number; pct: (c: Ct) => number; tone: (c: Ct) => "accent" | "good" | "warn" | "bad" }[] = [
+  { id: "cpu", label: "CPU", unit: (c) => `${Math.round(c.cpu)}%`, raw: (c) => c.cpu, pct: (c) => c.cpu, tone: (c) => (c.cpu > 30 ? "warn" : "accent") },
+  { id: "mem", label: "메모리", unit: (c) => `${c.mem.toFixed(1)} GB`, raw: (c) => c.mem, pct: (c) => (c.mem / c.memLimit) * 100, tone: (c) => (c.mem / c.memLimit > 0.9 ? "bad" : "good") },
+  { id: "disk", label: "디스크", unit: (c) => `${(c.wrRate + c.rdRate).toFixed(1)} MB/s`, raw: (c) => c.wrRate + c.rdRate, pct: (c) => Math.min(100, (c.wrRate + c.rdRate) * 5), tone: () => "accent" },
+  { id: "net", label: "네트워크", unit: (c) => `${(c.rxRate + c.txRate).toFixed(1)} Mb/s`, raw: (c) => c.rxRate + c.txRate, pct: (c) => Math.min(100, (c.rxRate + c.txRate) * 2), tone: () => "good" },
 ];
 const CHART = ["var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"]; // 컨테이너 색 넷 — 전체(accent)와 겹치지 않게 chart-1 은 안 쓴다
 const colorOfCt = (m: Metrics, name: string) => CHART[m.ct.findIndex((c) => c.name === name) % CHART.length];
 const sparkOf = (c: Ct, id: Res) => ({ cpu: c.spark, mem: c.memSpark, disk: c.ioSpark, net: c.netSpark }[id]);
 const SplitCtx = createContext(false);
 const hostOf = (H: Metrics["h"], id: Res) => ({
-  cpu: { value: `${Math.round(last(H.cpu))}%`, sub: "8 코어", series: [{ name: "호스트", points: H.cpu, tone: "accent" as const }], total: H.cpu, max: 100, fmt: (v: number) => `${v}%` },
-  mem: { value: `${last(H.mem).toFixed(1)} GB`, sub: "16 GB 중", series: [{ name: "사용", points: H.mem, tone: "info" as const }], total: H.mem, max: 16, fmt: (v: number) => `${v}G` },
-  disk: { value: `${Math.round(last(H.disk))} GB`, sub: "512 GB 중", series: [{ name: "읽기", points: H.net_out.map((v) => v / 2), tone: "info" as const }, { name: "쓰기", points: H.net_in.map((v) => v / 3), tone: "warn" as const }], total: H.net_out.map((v, i) => Math.round((v / 2 + H.net_in[i] / 3) * 10) / 10), max: undefined, fmt: (v: number) => `${v}M` },
-  net: { value: `↓${Math.round(last(H.net_in))} ↑${Math.round(last(H.net_out))}`, sub: "Mb/s", series: [{ name: "받음", points: H.net_in, tone: "good" as const }, { name: "보냄", points: H.net_out, tone: "accent" as const }], total: H.net_in.map((v, i) => Math.round((v + H.net_out[i]) * 10) / 10), max: undefined, fmt: (v: number) => `${v}` },
+  cpu: { value: `${Math.round(last(H.cpu))}%`, sub: "8 코어", series: [{ name: "호스트", points: H.cpu, tone: "accent" as const }], total: H.cpu, max: 100, pct: last(H.cpu), tv: `${Math.round(last(H.cpu))}%`, fmt: (v: number) => `${v}%` },
+  mem: { value: `${last(H.mem).toFixed(1)} GB`, sub: "16 GB 중", series: [{ name: "사용", points: H.mem, tone: "info" as const }], total: H.mem, max: 16, pct: (last(H.mem) / 16) * 100, tv: `${last(H.mem).toFixed(1)} GB`, fmt: (v: number) => `${v}G` },
+  disk: { value: `${Math.round(last(H.disk))} GB`, sub: "512 GB 중", series: [{ name: "읽기", points: H.net_out.map((v) => v / 6), tone: "info" as const }, { name: "쓰기", points: H.net_in.map((v) => v / 9), tone: "warn" as const }], total: H.net_out.map((v, i) => Math.round((v / 6 + H.net_in[i] / 9) * 10) / 10), max: undefined, pct: Math.min(100, (last(H.net_out) / 6 + last(H.net_in) / 9) * 5), tv: `${(last(H.net_out) / 6 + last(H.net_in) / 9).toFixed(1)} MB/s`, fmt: (v: number) => `${v}M` },
+  net: { value: `↓${Math.round(last(H.net_in))} ↑${Math.round(last(H.net_out))}`, sub: "Mb/s", series: [{ name: "받음", points: H.net_in, tone: "good" as const }, { name: "보냄", points: H.net_out, tone: "accent" as const }], total: H.net_in.map((v, i) => Math.round((v + H.net_out[i]) * 10) / 10), max: undefined, pct: Math.min(100, last(H.net_in) + last(H.net_out)), tv: `${Math.round(last(H.net_in) + last(H.net_out))} Mb/s`, fmt: (v: number) => `${v}` },
 }[id]);
 const topOf = (CT: Ct[], r: (typeof RES)[number], n = 3) => [...CT].sort((a, b) => r.pct(b) - r.pct(a)).slice(0, n);
 
-/** 리소스 띠 — 요약 한 줄: 이름·값 · 시계열 · 상위 3. 네 변형이 같은 띠를 쓴다. */
-function Band({ m, r, dense }: { m: Metrics; r: (typeof RES)[number]; dense?: boolean }) {
+/** 리소스 띠 — 요약 한 줄: 이름·값 · 시계열 · 오른쪽 막대. 오른쪽이 곧 범례다(그래프 아래 범례 없음). `bars` 로 막대 방식을 고른다. */
+type Bars = "rows" | "share" | "stack" | "columns";
+function Band({ m, r, dense, bars = "rows" }: { m: Metrics; r: (typeof RES)[number]; dense?: boolean; bars?: Bars }) {
   const h = hostOf(m.h, r.id);
   const split = useContext(SplitCtx);
   const top = topOf(m.ct, r);
-  // 컨테이너별 — 합계는 accent 면으로 남기고, 상위 3 은 각자 색의 선으로 얹는다(면 없음). 오른쪽 목록의 점이 같은 색이라 선을 찾을 수 있다.
+  // 컨테이너별 — 합계는 accent 면으로 남기고, 상위 3 은 각자 색의 선으로 얹는다(면 없음). 색은 오른쪽 막대와 같다.
   const n = h.series[0].points.length;
   const series = split
     ? [{ name: "전체", points: h.total, tone: "accent" as const }, ...top.map((c) => ({ name: c.name, points: sparkOf(c, r.id).concat(sparkOf(c, r.id)).slice(-n), color: colorOfCt(m, c.name), fill: false }))]
     : h.series;
+  const all = m.ct.reduce((a, c) => a + r.raw(c), 0) || 1; // 컨테이너 합 — 몫(share)의 분모
+  const share = (c: Ct) => (h.pct * r.raw(c)) / all; // 전체 막대 안에서 이 컨테이너가 차지하는 폭
+  const ACC = "var(--accent)";
+  const Row = ({ name, color, pct, value, strong }: { name: string; color?: string; pct: number; value: string; strong?: boolean }) => (
+    <div className="grid grid-cols-[80px_1fr_80px] items-center gap-2">
+      <span className={cn("flex items-center gap-2 truncate text-caption", strong ? "text-text" : "text-sub")}>{color && <span className="size-2 shrink-0 rounded-full" style={{ background: color }} />}{name}</span>
+      <Progress value={pct} color={color} tone={color ? undefined : "accent"} className="[&>div:first-child]:hidden" />
+      <span className={cn("text-end font-mono text-caption tabular-nums", strong ? "text-text" : "text-mute")}>{value}</span>
+    </div>
+  );
+  const side = !split
+    ? <div className="space-y-1.5">{top.map((c) => <div key={c.name} className="grid grid-cols-[80px_1fr_80px] items-center gap-2"><span className="truncate text-caption text-text">{c.name}</span><Progress value={r.pct(c)} tone={r.tone(c)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{r.unit(c)}</span></div>)}</div>
+    : bars === "rows"
+    ? <div className="space-y-1.5"><Row name="전체" color={ACC} pct={h.pct} value={h.tv} strong />{top.map((c) => <Row key={c.name} name={c.name} color={colorOfCt(m, c.name)} pct={r.pct(c)} value={r.unit(c)} />)}</div>
+    : bars === "share"
+    ? <div className="space-y-1.5"><Row name="전체" color={ACC} pct={h.pct} value={h.tv} strong />{top.map((c) => <Row key={c.name} name={c.name} color={colorOfCt(m, c.name)} pct={share(c)} value={`${Math.round((r.raw(c) / all) * 100)}%`} />)}</div>
+    : bars === "stack"
+    ? <div>
+        <div className="mb-2 flex items-center justify-between text-caption"><span className="text-text">전체</span><span className="font-mono tabular-nums text-text">{h.tv}</span></div>
+        <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-card-3">{top.map((c) => <span key={c.name} className="h-full rounded-full move" style={{ width: `${share(c)}%`, background: colorOfCt(m, c.name) }} />)}<span className="h-full rounded-full move" style={{ width: `${Math.max(0, h.pct - top.reduce((a, c) => a + share(c), 0))}%`, background: ACC, opacity: 0.35 }} /></div>
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">{top.map((c) => <span key={c.name} className="inline-flex items-center gap-2 whitespace-nowrap text-caption text-mute"><span className="size-2 rounded-full" style={{ background: colorOfCt(m, c.name) }} />{c.name} <span className="font-mono tabular-nums text-text">{r.unit(c)}</span></span>)}</div>
+      </div>
+    : <div className="grid grid-cols-4 gap-3">{[{ name: "전체", color: ACC, pct: h.pct, value: h.tv.split(" ")[0], strong: true }, ...top.map((c) => ({ name: c.name, color: colorOfCt(m, c.name), pct: r.pct(c), value: r.unit(c).split(" ")[0], strong: false }))].map((x) => (
+        <div key={x.name} className="flex flex-col items-center gap-1.5">
+          <span className={cn("whitespace-nowrap font-mono text-[11px] tabular-nums", x.strong ? "text-text" : "text-mute")}>{x.value}</span>
+          <div className="flex h-12 w-full items-end overflow-hidden rounded-[4px] bg-card-3"><span className="w-full rounded-[4px] move" style={{ height: `${x.pct}%`, background: x.color }} /></div>
+          <span className={cn("truncate text-caption", x.strong ? "text-text" : "text-sub")}>{x.name}</span>
+        </div>))}</div>;
   return (
     <div className={cn("grid items-center gap-8", dense ? "grid-cols-[140px_1fr_240px]" : "grid-cols-[160px_1fr_260px]")}>
       <div><p className="text-body text-mute">{r.label}</p><p className="mt-1 text-title tabular-nums text-text">{h.value}</p><p className="text-caption text-mute">{h.sub}</p></div>
-      <div className="ps-8"><AreaChart series={series} max={h.max} height={64} format={h.fmt} /></div>
-      <div className="space-y-1.5">{top.map((c) => <div key={c.name} className="grid grid-cols-[80px_1fr_80px] items-center gap-2"><span className="flex items-center gap-2 truncate text-caption text-text">{split && <span className="size-2 shrink-0 rounded-full" style={{ background: colorOfCt(m, c.name) }} />}{c.name}</span><Progress value={r.pct(c)} tone={r.tone(c)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{r.unit(c)}</span></div>)}</div>
+      <div className="ps-8"><AreaChart series={series} max={h.max} height={64} format={h.fmt} legend={!split} /></div>
+      {side}
     </div>
   );
 }
@@ -139,8 +168,8 @@ function Detail({ m, r }: { m: Metrics; r: (typeof RES)[number] }) {
 }
 
 /** V2 — 띠 넷만. 토글 "컨테이너별" 이 켜지면 각 띠의 그래프에 상위 3 컨테이너가 색 선으로 얹힌다. */
-function V2({ m }: { m: Metrics }) {
-  return <Card className="divide-y divide-line p-0 [&>*]:px-6 [&>*]:py-5">{RES.map((r) => <div key={r.id}><Band m={m} r={r} /></div>)}</Card>;
+function V2({ m, bars }: { m: Metrics; bars?: Bars }) {
+  return <Card className="divide-y divide-line p-0 [&>*]:px-6 [&>*]:py-5">{RES.map((r) => <div key={r.id}><Band m={m} r={r} bars={bars} /></div>)}</Card>;
 }
 
 /** V2-a — 행 펼침. 띠를 누르면 그 자리에서 세부가 펼쳐진다(unfold). 한 번에 여러 개 열 수 있다. */
@@ -190,9 +219,12 @@ export function Lab() {
   return (
     <SplitCtx.Provider value={split}>
     <AppShell>
-      <PageHeading crumbs={[{ label: "캔버스", href: "#" }, { label: "Lab" }]} title="리소스" meta={<><IconText icon="insight">가로 띠 4단 + 세부 드러내기 — 경우의 수 넷</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `실시간 흉내 · 1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<><Switch checked={split} onCheckedChange={setSplit} label="컨테이너별" boxed /><Switch checked={live} onCheckedChange={setLive} label="실시간" boxed /></>} />
+      <PageHeading crumbs={[{ label: "캔버스", href: "#" }, { label: "Lab" }]} title="리소스" meta={<><IconText icon="insight">가로 띠 4단 · 오른쪽 막대 넷 + 세부 드러내기 넷</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `실시간 흉내 · 1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<><Switch checked={split} onCheckedChange={setSplit} label="컨테이너별" boxed /><Switch checked={live} onCheckedChange={setLive} label="실시간" boxed /></>} />
       <div className="mt-8">
-        <Option id="v2" title="V2 · 가로 띠 4단 + 컨테이너별 토글" from="합계는 accent 면, 상위 3 은 각자 색 선(면 없음) · 오른쪽 목록의 점이 같은 색" fit="누가 올렸나를 그래프 위에서 바로. 토글을 끄면 합계만"><V2 m={m} /></Option>
+        <Option id="v2" title="V2-1 · 행 막대 — 자기 상한 기준" from="오른쪽이 곧 범례. 전체(accent) 한 줄 + 상위 3, 막대는 각자 상한(코어·메모리 limit) 대비" fit="컨테이너가 자기 한도에 얼마나 붙었나. 상한 근접이 바로 보인다"><V2 m={m} /></Option>
+        <Option id="v2s" title="V2-2 · 행 막대 — 전체 기준" from="전체 막대가 자, 컨테이너 막대는 그 안의 몫(share). 값도 %" fit="전체 사용량을 누가 얼마나 가져갔나. 막대 폭이 그대로 기여도"><V2 m={m} bars="share" /></Option>
+        <Option id="v2k" title="V2-3 · 쌓은 막대" from="Meter 처럼 한 줄에 상위 3 몫을 쌓고 나머지는 accent 옅게. 아래에 색 점 범례" fit="가장 짧다. 세로 여유가 없을 때, 구성비 한 줄"><V2 m={m} bars="stack" /></Option>
+        <Option id="v2v" title="V2-4 · 세로 막대" from="전체 + 상위 3 을 기둥 넷으로, 값은 위·이름은 아래" fit="시계열 옆에 놓였을 때 '지금' 을 세로로 대응. 눈이 옆으로 흐르지 않는다"><V2 m={m} bars="columns" /></Option>
         <Option id="v2a" title="V2-a · 행 펼침" from="아코디언 — 띠가 곧 트리거" fit="궁금한 리소스만 그 자리에서. 여러 개 동시에 열어 비교"><V2a m={m} /></Option>
         <Option id="v2b" title="V2-b · 오른쪽 서랍" from="Sheet — 요약은 뒤에 남는다" fit="요약을 잃지 않고 깊이 볼 때. 서랍 안에서 범위·목록"><V2b m={m} /></Option>
         <Option id="v2c" title="V2-c · 전체 스위치" from="'자세히' 하나로 모두 펼침 — 두 상태" fit="클릭 없이 훑고 싶을 때. 넷을 한 번에 비교"><V2c m={m} /></Option>

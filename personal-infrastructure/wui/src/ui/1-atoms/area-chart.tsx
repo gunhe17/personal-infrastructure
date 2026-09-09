@@ -4,7 +4,7 @@ import { cn } from "@/lib/cn";
 const COLOR = { accent: "var(--accent)", good: "var(--good)", warn: "var(--warn)", bad: "var(--bad)", info: "var(--info)", mute: "var(--mute)" } as const;
 export type Series = { name: string; points: number[]; tone?: keyof typeof COLOR; color?: string; fill?: boolean };
 const colorOf = (s: Series) => s.color ?? COLOR[s.tone ?? "accent"];
-export function AreaChart({ series, max, height = 160, format = (v) => String(v), xLabels, className }: { series: Series[]; max?: number; height?: number; format?: (v: number) => string; xLabels?: string[]; className?: string }) {
+export function AreaChart({ series, max, height = 160, format = (v) => String(v), xLabels, legend = true, className }: { series: Series[]; max?: number; height?: number; format?: (v: number) => string; xLabels?: string[]; legend?: boolean; className?: string }) {
   const W = 1000, top = Math.max(max ?? 0, ...series.flatMap((s) => s.points)) || 1;
   const n = Math.max(...series.map((s) => s.points.length));
   const y = (v: number) => height - (v / top) * height;
@@ -28,7 +28,7 @@ export function AreaChart({ series, max, height = 160, format = (v) => String(v)
         </div>
       </div>
       {xLabels && <div className="mt-2 flex justify-between font-mono text-[11px] tabular-nums text-mute">{xLabels.map((l, i) => <span key={i}>{l}</span>)}</div>}
-      {series.length > 1 && <div className="mt-3 flex flex-wrap gap-4">{series.map((s) => <span key={s.name} className="inline-flex items-center gap-2 text-caption text-mute"><span className="size-2 rounded-full" style={{ background: colorOf(s) }} />{s.name}</span>)}</div>}
+      {legend && series.length > 1 && <div className="mt-3 flex flex-wrap gap-4">{series.map((s) => <span key={s.name} className="inline-flex items-center gap-2 text-caption text-mute"><span className="size-2 rounded-full" style={{ background: colorOf(s) }} />{s.name}</span>)}</div>}
     </div>
   );
 }
