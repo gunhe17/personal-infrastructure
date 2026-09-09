@@ -13,7 +13,6 @@ import { PageHeading } from "@/ui/3-organisms/page-heading";
 import { AppShell } from "@/ui/3-organisms/app-shell";
 import { StatusDot } from "@/ui/2-molecules/status-dot";
 import { SideNav } from "@/ui/3-organisms/side-nav";
-import { Avatar } from "@/ui/1-atoms/avatar";
 
 const PROJECTS = [{ value: "api", label: "api" }, { value: "blog", label: "blog", tone: "running" as const }, { value: "worker", label: "worker", tone: "failed" as const }, { value: "postgres", label: "postgres", tone: "running" as const }];
 const ITEMS = [{ value: "overview", label: "Overview", icon: "insight" as const }, { value: "deployments", label: "Deployments", icon: "deploy" as const, count: 12 }, { value: "domains", label: "Domains", icon: "domain" as const, count: 3 }, { value: "storage", label: "Storage", icon: "volume" as const }, { value: "logs", label: "Logs", icon: "log" as const }, { value: "settings", label: "Settings", icon: "settings" as const }];
@@ -22,7 +21,7 @@ const SYSTEM = [{ value: "resources", label: "Resources", icon: "monitor" as con
 export function SettingsScreen() {
   const [nav, setNav] = useState("general"), [auto, setAuto] = useState(true), [stack, setStack] = useState("dockerfile");
   return (
-    <AppShell nav={<SideNav projects={PROJECTS} project="api" items={ITEMS} item="settings" system={SYSTEM} status={<StatusDot tone="running">edge up</StatusDot>} user={<Avatar name="gunhee" size={32} />} />}>
+    <AppShell nav={<SideNav projects={PROJECTS} project="api" items={ITEMS} item="settings" system={SYSTEM} status={<StatusDot tone="running">edge up</StatusDot>} profile={{ name: "gunhee", sub: "admin" }} />}>
       <PageHeading crumbs={[{ label: "프로젝트", href: "#" }, { label: "api", href: "#" }, { label: "설정" }]} title="설정" />
       <div className="mt-6 grid grid-cols-[220px_1fr] gap-8">
         <NavList value={nav} onValueChange={setNav} items={[{ value: "general", label: "일반", icon: "settings" }, { value: "build", label: "빌드", icon: "project" }, { value: "domains", label: "도메인", icon: "domain", count: 1 }, { value: "env", label: "환경변수", icon: "secret", count: 3 }, { value: "danger", label: "위험 구역", icon: "warning" }]} />

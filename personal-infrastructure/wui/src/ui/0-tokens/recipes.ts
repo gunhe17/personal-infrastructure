@@ -8,4 +8,5 @@ export const SEG_SM = "relative z-10 inline-flex h-4 flex-1 shrink-0 items-cente
 
 export const POPUP = "rounded-popup bg-popup p-1.5 outline-none ring-1 ring-line surface-2";
 
-export const ITEM = "flex h-10 items-center rounded-control px-3 text-body text-text interactive";
+/** 팝업 항목 — 아이콘이 앞에 올 수 있으므로 아이콘↔글자 8 을 미리 준다. */
+export const ITEM = "flex h-10 items-center gap-2 rounded-control px-3 text-body text-text interactive";
