@@ -46,7 +46,7 @@ const forecast = (h: number[], total: number) => {
 /** V1 — 기준. 막대 위에 사용량·총량, 오른쪽에 30일 변화. 시간 축은 열 머리에 한 번만 적는다(사용자 질문 2026-09-09: 일 기준 변화량임을 어떻게 명시하나). */
 function V1() {
   return (
-    <Card title="Devices" subtitle={`${DEVICES.length} mounts · ${GB(DEVICES.reduce((a, d) => a + d.total - used(d), 0))} free in total`}>
+    <Card title="Devices">
       <div className="divide-y divide-line">
         {DEVICES.map((d) => {
           const pct = (used(d) / d.total) * 100;
