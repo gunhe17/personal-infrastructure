@@ -11,7 +11,7 @@ export function Meter({ label, total, unit = "", parts, className }: { label?: R
     <Base.Root value={used} max={total} className={cn("block", className)}>
       <div className="mb-2 flex items-center justify-between text-body"><Base.Label className="text-mute">{label}</Base.Label><span className="font-mono tabular-nums text-text">{Math.round(used * 10) / 10}{unit} / {total}{unit}</span></div>
       <Base.Track className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-card-3">
-        {parts.map((p) => <Base.Indicator key={p.label} className={cn("h-full grow", FILL[p.tone])} style={{ width: `${(p.value / total) * 100}%` }} />)}
+        {parts.map((p) => <Base.Indicator key={p.label} className={cn("h-full", FILL[p.tone])} style={{ width: `${(p.value / total) * 100}%` }} />)}
       </Base.Track>
       <div className="mt-3 flex flex-wrap gap-4">{parts.map((p) => <StatusDot key={p.label} tone={p.tone} muted>{p.label} <span className="font-mono tabular-nums text-text">{p.value}{unit}</span></StatusDot>)}</div>
     </Base.Root>
