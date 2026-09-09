@@ -12,7 +12,7 @@ export function Accordion({ items, className }: { items: { value: string; title:
         <BaseAccordion.Item key={it.value} value={it.value} className="group rounded-control p-1 tint data-[open]:bg-[var(--c2)] data-[open]:[--card-2:var(--c3)] data-[open]:[--card-3:var(--c4)]">
           <BaseAccordion.Header>
             <BaseAccordion.Trigger className="flex w-full items-center justify-between gap-4 rounded-[8px] px-3 py-3 text-start interactive">
-              <span><span className="block text-body-lg font-medium text-text">{it.title}</span>{it.hint && <span className="block text-body text-mute">{it.hint}</span>}</span>
+              <span className="min-w-0 flex-1"><span className="block text-body-lg font-medium text-text">{it.title}</span>{it.hint && <span className="block text-body text-mute">{it.hint}</span>}</span>
               <Icon name="chevronDown" className="text-mute flip-open tint group-hover:text-text group-data-[open]:text-text" />
             </BaseAccordion.Trigger>
           </BaseAccordion.Header>
