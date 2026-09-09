@@ -58,10 +58,11 @@ await check("W7", "Tailwind Plus 구성 — 캘린더·내비·알림 닫기·In
   await page.locator("#notice-action").getByRole("button", { name: "닫기" }).click(); await page.locator("#notice-action").getByRole("button", { name: "다시 보이기" }).waitFor();
   await page.locator("#x-settings").getByText("프로젝트 삭제").waitFor();
 });
-await check("W8", "앱 — 로그인하면 홈, 프로젝트가 없으면 빈 상태", async () => {
+await check("W8", "앱 — 최초 비밀번호 설정 → 홈, 프로젝트가 없으면 빈 상태", async () => {
   await page.goto(`${base}/ui/#login`); await page.waitForLoadState("networkidle");
-  await page.locator("input[type=password]").fill("pi_demo");
-  await page.getByRole("button", { name: "Continue" }).click();
+  const pws = page.locator("input[type=password]");
+  if (await pws.count() === 2) { await pws.nth(0).fill("homeserver-1"); await pws.nth(1).fill("homeserver-1"); await page.getByRole("button", { name: "Create" }).click(); }
+  else { await pws.first().fill("homeserver-1"); await page.getByRole("button", { name: "Continue" }).click(); }
   await page.waitForTimeout(400);
   if (await page.evaluate(() => location.hash) !== "#home") throw new Error("홈으로 안 감");
   if (!(await page.getByText("No projects yet").first().isVisible())) throw new Error("빈 상태가 없다");
