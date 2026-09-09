@@ -106,13 +106,13 @@ const hostOf = (H: Metrics["h"], id: "cpu" | "mem") => ({
   mem: { value: `${last(H.mem).toFixed(1)} GB`, sub: "16 GB 중", series: [{ name: "사용", points: H.mem, tone: "info" as const }], total: H.mem, max: 16, pct: (last(H.mem) / 16) * 100, tv: `${last(H.mem).toFixed(1)} GB`, fmt: (v: number) => `${v}G` },
 }[id]);
 
-/** 띠 크기 규격 — 제목 줄(작게 + 우측 토글) → 그래프(우측 끝에 현재값) 를 왼쪽에, 가로 쌓은 띠 + 상위 3 을 오른쪽에(사용자 지정 2026-09-09). 열 폭은 컨테이너 768 이상에서만. */
+/** 띠 크기 규격 — 제목 줄(작게 + 우측 토글) → 그래프(우측 끝에 현재값) 를 왼쪽에, 가로 쌓은 띠 + 상위 3 을 오른쪽에(사용자 지정 2026-09-09). 2열은 창 1024 이상에서만(사용자 결정 2026-09-09: 전환점은 창 기준으로 통일). */
 type Size = { pad: string; gap: string; cols: string; chart: number; name: string; value: string; row: string; dot: string; rows: string };
 const SIZES = {
-  base:  { pad: "px-4 py-4 sm:px-6 sm:py-5", gap: "@3xl:gap-x-8",  cols: "@3xl:grid-cols-[1fr_280px]", chart: 64, name: "text-body",    value: "text-title",               row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
-  tight: { pad: "px-4 py-4 sm:px-5", gap: "@3xl:gap-x-6",  cols: "@3xl:grid-cols-[1fr_240px]", chart: 48, name: "text-caption", value: "text-body-lg font-medium", row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0" },
-  roomy: { pad: "px-4 py-5 sm:px-7 sm:py-7", gap: "@3xl:gap-x-10", cols: "@3xl:grid-cols-[1fr_320px]", chart: 88, name: "text-body",    value: "text-title-lg",            row: "text-caption",          dot: "size-2",   rows: "space-y-1" },
-  chart: { pad: "px-4 py-4 sm:px-6 sm:py-5", gap: "@3xl:gap-x-6",  cols: "@3xl:grid-cols-[1fr_216px]", chart: 80, name: "text-caption", value: "text-title",               row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
+  base:  { pad: "px-4 py-4 sm:px-6 sm:py-5", gap: "lg:gap-x-8",  cols: "lg:grid-cols-[1fr_280px]", chart: 64, name: "text-body",    value: "text-title",               row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
+  tight: { pad: "px-4 py-4 sm:px-5", gap: "lg:gap-x-6",  cols: "lg:grid-cols-[1fr_240px]", chart: 48, name: "text-caption", value: "text-body-lg font-medium", row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0" },
+  roomy: { pad: "px-4 py-5 sm:px-7 sm:py-7", gap: "lg:gap-x-10", cols: "lg:grid-cols-[1fr_320px]", chart: 88, name: "text-body",    value: "text-title-lg",            row: "text-caption",          dot: "size-2",   rows: "space-y-1" },
+  chart: { pad: "px-4 py-4 sm:px-6 sm:py-5", gap: "lg:gap-x-6",  cols: "lg:grid-cols-[1fr_216px]", chart: 80, name: "text-caption", value: "text-title",               row: "text-[11px] leading-4", dot: "size-1.5", rows: "space-y-0.5" },
 } satisfies Record<string, Size>;
 type SizeId = keyof typeof SIZES;
 const DirCtx = createContext<{ dir: Dir; setDir: (d: Dir) => void; marks: boolean }>({ dir: "sum", setDir: () => {}, marks: true });
@@ -149,7 +149,7 @@ function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?:
         <div className="mt-2"><AreaChart series={series} max={h.max} height={z.chart} format={h.fmt} formatMark={r.fmt} legend={false} annotate={g.marks} nowLabel={h.value} nowNote={h.sub} nowClass={z.value} /></div>
       </div>
       {/* 오른쪽 — 가로 쌓은 띠 + 상위 3 */}
-      <div className="@3xl:pt-8">
+      <div className="lg:pt-8">
         <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-card-3">
           {split && top.map((c) => <span key={c.name} className="h-full rounded-full move" style={{ width: `${share(c)}%`, background: color(c.name) }} />)}
           <span className="h-full rounded-full move" style={{ width: `${split ? rest : h.pct}%`, background: ACC, opacity: split ? 0.35 : 1 }} />
@@ -191,7 +191,7 @@ function StorageRow({ m }: { m: Metrics }) {
 
 /** V2 — 띠 넷. 한 카드에 line 으로 나누거나(기본) 카드 넷으로. */
 function V2({ m, sz = "base" }: { m: Metrics; sz?: SizeId }) {
-  return <Card className="divide-y divide-line p-0">{RES.map((r) => <div key={r.id} className={cn("@container", SIZES[sz].pad)}><Band m={m} r={r} sz={sz} /></div>)}</Card>;
+  return <Card className="divide-y divide-line p-0">{RES.map((r) => <div key={r.id} className={SIZES[sz].pad}><Band m={m} r={r} sz={sz} /></div>)}</Card>;
 }
 
 export function Lab() {
