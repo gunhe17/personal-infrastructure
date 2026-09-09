@@ -116,7 +116,7 @@ const SIZES = {
 type SizeId = keyof typeof SIZES;
 /** 토글 위치 — value: 설명 열 값 아래 · chart: 그래프 위 오른쪽 · name: 이름 아래 · page: 페이지 머리 하나로 두 띠 동시에. */
 type Tog = "value" | "chart" | "name" | "page";
-const DirCtx = createContext<{ dir: Dir; setDir: (d: Dir) => void; tog: Tog }>({ dir: "sum", setDir: () => {}, tog: "value" });
+const DirCtx = createContext<{ dir: Dir; setDir: (d: Dir) => void; tog: Tog; marks: boolean }>({ dir: "sum", setDir: () => {}, tog: "value", marks: true });
 
 /** 리소스 띠 — 이름 · 시계열 · 세로 막대 · 설명(값·부연·상위 3). 오른쪽이 곧 범례다(그래프 아래 범례 없음). */
 function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?: SizeId }) {
@@ -148,7 +148,7 @@ function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?:
     </div>
   );
   // 그래프
-  const chart = <div className="ps-8"><AreaChart series={series} max={h.max} height={z.chart} format={h.fmt} legend={!split} /></div>;
+  const chart = <div className={g.marks ? "" : "ps-8"}><AreaChart series={series} max={h.max} height={z.chart} format={h.fmt} formatMark={r.fmt} legend={!split} annotate={g.marks} /></div>;
   const graph = at("chart") ? <div className="space-y-2"><div className="flex justify-end">{at("chart")}</div>{chart}</div> : chart;
   // 막대 — 세로 기둥, 그래프와 같은 높이. 아래부터 상위 3 이 각자 색, 나머지 사용량은 accent 옅게. 컨테이너별이 꺼지면 accent 하나.
   const bar = (
@@ -220,6 +220,7 @@ export function Lab() {
   const [sz, setSz] = useState<SizeId>("base");
   const [tog, setTog] = useState<Tog>("value");
   const [dir, setDir] = useState<Dir>("sum");
+  const [marks, setMarks] = useState(true);
   const m = useLive(live);
   const up = 6 * 86400 + 4 * 3600 + m.tick;
   return (
@@ -228,10 +229,11 @@ export function Lab() {
       <PageHeading crumbs={[{ label: "홈", href: "#" }, { label: "리소스" }]} title="리소스" meta={<><IconText icon="server">homeserver · 8 코어 · 16 GB</IconText><IconText icon="clock">가동 {Math.floor(up / 86400)}일 {Math.floor((up % 86400) / 3600)}시간</IconText><IconText icon="project">컨테이너 {m.ct.length} 실행 중</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<>{tog === "page" && <FilterTabs value={dir} onValueChange={setDir} items={[{ value: "sum", label: "합" }, { value: "a", label: "읽기 · 받음" }, { value: "b", label: "쓰기 · 보냄" }]} />}<Switch checked={split} onCheckedChange={setSplit} label="컨테이너별" boxed /><Switch checked={live} onCheckedChange={setLive} label="실시간" boxed /></>} />
       <div className="mt-6 flex flex-wrap items-center gap-6 text-caption text-mute">
         <span className="inline-flex items-center gap-3">크기<FilterTabs value={sz} onValueChange={(v) => setSz(v as SizeId)} items={[{ value: "base", label: "S1 기준" }, { value: "tight", label: "S2 촘촘" }, { value: "roomy", label: "S3 여유" }, { value: "chart", label: "S4 그래프" }, { value: "head", label: "S5 머리 한 줄" }]} /></span>
+        <span className="inline-flex items-center gap-3">그래프<FilterTabs value={marks ? "marks" : "axis"} onValueChange={(v) => setMarks(v === "marks")} items={[{ value: "marks", label: "최고 · 최저" }, { value: "axis", label: "눈금" }]} /></span>
         <span className="inline-flex items-center gap-3">토글 위치<FilterTabs value={tog} onValueChange={(v) => setTog(v as Tog)} items={[{ value: "value", label: "T1 값 아래" }, { value: "chart", label: "T2 그래프 위" }, { value: "name", label: "T3 이름 아래" }, { value: "page", label: "T4 페이지 머리" }]} /></span>
       </div>
       <div className="mt-5 space-y-5">
-        <DirCtx.Provider value={{ dir, setDir, tog }}><V2 m={m} sz={sz} /></DirCtx.Provider>
+        <DirCtx.Provider value={{ dir, setDir, tog, marks }}><V2 m={m} sz={sz} /></DirCtx.Provider>
         <StorageRow m={m} />
       </div>
       <Option id="spec" title="구성 — 실제 화면" from="AppShell + PageHeading(호스트·가동·컨테이너 수) · 띠 넷 = 이름 → 그래프 → 세로 막대 → 설명(크기 S1–S5, 토글 위치 T1–T4 는 위 도구 줄로 전환) · 저장 장치 둘(내장 디스크 / 외장 SSD, 같은 틀)" fit="띠는 유량, 카드는 저량. SSD 를 꽂으면 카드가 하나 더 붙는다. 새 API: 컨테이너 BlockIO · /proc/diskstats · docker system df -v · 마운트 목록"><span /></Option>
