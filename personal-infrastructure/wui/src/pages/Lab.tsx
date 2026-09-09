@@ -63,7 +63,7 @@ function useLive(on: boolean) {
 function Option({ id, title, from, fit, children }: { id: string; title: string; from: string; fit: string; children: React.ReactNode }) {
   return (
     <section id={id} className="mt-16 first:mt-0">
-      <SectionHeading title={title} description={<><span className="text-text">근거</span> {from} · <span className="text-text">맞는 경우</span> {fit}</>} />
+      <SectionHeading title={title} description={<><span className="text-text">Why</span> {from} · <span className="text-text">Fits</span> {fit}</>} />
       {children}
     </section>
   );
@@ -73,9 +73,9 @@ type Res = "cpu" | "mem" | "disk" | "net";
 // ── 한눈에 보기 — 네 리소스가 동시에 보이는 경우의 수 ─────────────────────────
 const RES: { id: Res; label: string; unit: (c: Ct) => string; fmt: (v: number) => string; raw: (c: Ct) => number; pct: (c: Ct) => number; tone: (c: Ct) => "accent" | "good" | "warn" | "bad" }[] = [
   { id: "cpu", label: "CPU", unit: (c) => `${Math.round(c.cpu)}%`, fmt: (v) => `${Math.round(v)}%`, raw: (c) => c.cpu, pct: (c) => c.cpu, tone: (c) => (c.cpu > 30 ? "warn" : "accent") },
-  { id: "mem", label: "메모리", unit: (c) => `${c.mem.toFixed(1)} GB`, fmt: (v) => `${v.toFixed(1)} GB`, raw: (c) => c.mem, pct: (c) => (c.mem / c.memLimit) * 100, tone: (c) => (c.mem / c.memLimit > 0.9 ? "bad" : "good") },
-  { id: "disk", label: "디스크 I/O", unit: (c) => `${(c.wrRate + c.rdRate).toFixed(1)} MB/s`, fmt: (v) => `${v.toFixed(1)} MB/s`, raw: (c) => c.wrRate + c.rdRate, pct: (c) => Math.min(100, (c.wrRate + c.rdRate) * 5), tone: () => "accent" },
-  { id: "net", label: "네트워크", unit: (c) => `${(c.rxRate + c.txRate).toFixed(1)} Mb/s`, fmt: (v) => `${v.toFixed(1)} Mb/s`, raw: (c) => c.rxRate + c.txRate, pct: (c) => Math.min(100, (c.rxRate + c.txRate) * 2), tone: () => "good" },
+  { id: "mem", label: "Memory", unit: (c) => `${c.mem.toFixed(1)} GB`, fmt: (v) => `${v.toFixed(1)} GB`, raw: (c) => c.mem, pct: (c) => (c.mem / c.memLimit) * 100, tone: (c) => (c.mem / c.memLimit > 0.9 ? "bad" : "good") },
+  { id: "disk", label: "Disk I/O", unit: (c) => `${(c.wrRate + c.rdRate).toFixed(1)} MB/s`, fmt: (v) => `${v.toFixed(1)} MB/s`, raw: (c) => c.wrRate + c.rdRate, pct: (c) => Math.min(100, (c.wrRate + c.rdRate) * 5), tone: () => "accent" },
+  { id: "net", label: "Network", unit: (c) => `${(c.rxRate + c.txRate).toFixed(1)} Mb/s`, fmt: (v) => `${v.toFixed(1)} Mb/s`, raw: (c) => c.rxRate + c.txRate, pct: (c) => Math.min(100, (c.rxRate + c.txRate) * 2), tone: () => "good" },
 ];
 // 색은 순위를 말한다(사용자 결정 2026-09-09): 전체는 accent(파랑), 상위 1·2·3 은 청록 계열에서 점점 옅게. 컨테이너 고유색은 없다.
 const NOW = "var(--now)"; // 현재값 = 전체
@@ -88,8 +88,8 @@ const SplitCtx = createContext(false);
 // 점유율: 디스크는 한 장치라 합을, 네트워크는 양방향이 따로라 max(in, out) 을 상한(cap, 설정값)에 댄다.
 type Dir = "sum" | "a" | "b";
 const DIRS = {
-  disk: { a: { label: "읽기", ct: (c: Ct) => c.rdRate, host: (H: Metrics["h"]) => H.disk_rd }, b: { label: "쓰기", ct: (c: Ct) => c.wrRate, host: (H: Metrics["h"]) => H.disk_wr }, cap: 50, combine: "sum" as const, unit: "MB/s", yfmt: (v: number) => `${v}M`, tones: ["info", "warn"] as const, glyph: null },
-  net: { a: { label: "받음", ct: (c: Ct) => c.rxRate, host: (H: Metrics["h"]) => H.net_in }, b: { label: "보냄", ct: (c: Ct) => c.txRate, host: (H: Metrics["h"]) => H.net_out }, cap: 100, combine: "max" as const, unit: "Mb/s", yfmt: (v: number) => `${v}`, tones: ["good", "accent"] as const, glyph: ["↓", "↑"] as [string, string] },
+  disk: { a: { label: "Read", ct: (c: Ct) => c.rdRate, host: (H: Metrics["h"]) => H.disk_rd }, b: { label: "Write", ct: (c: Ct) => c.wrRate, host: (H: Metrics["h"]) => H.disk_wr }, cap: 50, combine: "sum" as const, unit: "MB/s", yfmt: (v: number) => `${v}M`, tones: ["info", "warn"] as const, glyph: null },
+  net: { a: { label: "In", ct: (c: Ct) => c.rxRate, host: (H: Metrics["h"]) => H.net_in }, b: { label: "Out", ct: (c: Ct) => c.txRate, host: (H: Metrics["h"]) => H.net_out }, cap: 100, combine: "max" as const, unit: "Mb/s", yfmt: (v: number) => `${v}`, tones: ["good", "accent"] as const, glyph: ["↓", "↑"] as [string, string] },
 };
 const r1 = (v: number) => Math.round(v * 10) / 10;
 const dirHost = (id: "disk" | "net", H: Metrics["h"], dir: Dir) => {
@@ -103,8 +103,8 @@ const dirHost = (id: "disk" | "net", H: Metrics["h"], dir: Dir) => {
   return { value: `${gg}${sv} ${D.unit}`, sub: k.label, series: [{ name: k.label, points: P, tone: D.tones[dir === "a" ? 0 : 1] }], total: P, max: undefined, pct: Math.min(100, (v / D.cap) * 100), tv: `${gg}${sv} ${D.unit}`, fmt: D.yfmt };
 };
 const hostOf = (H: Metrics["h"], id: "cpu" | "mem") => ({
-  cpu: { value: `${Math.round(last(H.cpu))}%`, sub: "8 코어", series: [{ name: "호스트", points: H.cpu, tone: "accent" as const }], total: H.cpu, max: 100, pct: last(H.cpu), tv: `${Math.round(last(H.cpu))}%`, fmt: (v: number) => `${v}%` },
-  mem: { value: `${last(H.mem).toFixed(1)} GB`, sub: "16 GB 중", series: [{ name: "사용", points: H.mem, tone: "info" as const }], total: H.mem, max: 16, pct: (last(H.mem) / 16) * 100, tv: `${last(H.mem).toFixed(1)} GB`, fmt: (v: number) => `${v}G` },
+  cpu: { value: `${Math.round(last(H.cpu))}%`, sub: "8 cores", series: [{ name: "Host", points: H.cpu, tone: "accent" as const }], total: H.cpu, max: 100, pct: last(H.cpu), tv: `${Math.round(last(H.cpu))}%`, fmt: (v: number) => `${v}%` },
+  mem: { value: `${last(H.mem).toFixed(1)} GB`, sub: "of 16 GB", series: [{ name: "Used", points: H.mem, tone: "info" as const }], total: H.mem, max: 16, pct: (last(H.mem) / 16) * 100, tv: `${last(H.mem).toFixed(1)} GB`, fmt: (v: number) => `${v}G` },
 }[id]);
 
 /** 띠 크기 규격 — 제목 줄(제목 + 바로 오른쪽 토글) → 그래프(우측 끝에 현재값) 를 왼쪽에, 가로 쌓은 띠 + 상위 3 을 오른쪽에(사용자 지정 2026-09-09). 2열은 창 1024 이상에서만(사용자 결정 2026-09-09: 전환점은 창 기준으로 통일). */
@@ -132,7 +132,7 @@ function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?:
   const color = (name: string) => rankOf(top, name);
   const n = h.series[0].points.length;
   const series = split
-    ? [{ name: "전체", points: h.total, color: NOW, fill: false }, ...top.map((c) => ({ name: c.name, points: sparkOf(c, r.id).concat(sparkOf(c, r.id)).slice(-n), color: color(c.name), fill: false }))]
+    ? [{ name: "Total", points: h.total, color: NOW, fill: false }, ...top.map((c) => ({ name: c.name, points: sparkOf(c, r.id).concat(sparkOf(c, r.id)).slice(-n), color: color(c.name), fill: false }))]
     : h.series.map((x) => ({ ...x, color: NOW, fill: false })); // 컨테이너별을 끄면 전체 하나 — 색은 현재값과 같게
   const all = m.ct.reduce((a, c) => a + raw(c), 0) || 1; // 컨테이너 합 — 몫(share)의 분모
   const share = (c: Ct) => (h.pct * raw(c)) / all; // 전체 띠 안에서 이 컨테이너가 차지하는 폭
@@ -143,7 +143,7 @@ function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?:
         {/* 제목 줄 — 제목 바로 오른쪽에 토글, 글자 크기는 제목과 같게(사용자 지정 2026-09-09) */}
         <div className="flex h-7 items-center gap-2">
           <span className={cn(z.name, "font-medium text-text")}>{r.label}</span>
-          {D && <FilterTabs size="sm" value={dir} onValueChange={setDir} items={[{ value: "sum", label: "합" }, { value: "a", label: D.a.label }, { value: "b", label: D.b.label }]} />}
+          {D && <FilterTabs size="sm" value={dir} onValueChange={setDir} items={[{ value: "sum", label: "Total" }, { value: "a", label: D.a.label }, { value: "b", label: D.b.label }]} />}
         </div>
         {/* 메인 그래프 — 우측 끝 선 높이에 현재값 */}
         <div className="mt-4"><AreaChart series={series} max={h.max} height={z.chart} format={h.fmt} formatMark={r.fmt} legend={false} annotate={g.marks} nowLabel={h.value} nowClass={z.value} nowColor={NOW} nowWidth={z.now} /></div>
@@ -171,8 +171,8 @@ function Storage({ m, title, mount, total, parts, rows, unitRow }: { m: Metrics;
   const max = Math.max(...rows.map((r) => r.value)) || 1;
   const fmt = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)} TB` : `${Math.round(v)} GB`;
   return (
-    <Card title={title} subtitle={`${fmt(total)} 중 ${fmt(used)} · 남은 ${fmt(total - used)}`} actions={<StatusDot tone="running" muted><span className="font-mono">{mount}</span></StatusDot>}>
-      <Meter label="쓰임새" total={total} unit="G" parts={parts} />
+    <Card title={title} subtitle={`${fmt(used)} of ${fmt(total)} · ${fmt(total - used)} free`} actions={<StatusDot tone="running" muted><span className="font-mono">{mount}</span></StatusDot>}>
+      <Meter label="Usage" total={total} unit="G" parts={parts} />
       <p className="mt-6 mb-3 text-caption text-mute">{unitRow}</p>
       <div className="space-y-2">{rows.map((c) => <div key={c.name} className="grid grid-cols-[96px_1fr_72px] items-center gap-3"><span className="flex items-center gap-2 truncate text-body text-text"><span className="size-2 shrink-0 rounded-full" style={{ background: colorOfCt(m, c.name) }} />{c.name}</span><Progress value={(c.value / max) * 100} color={colorOfCt(m, c.name)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{c.value < 10 ? c.value.toFixed(1) : Math.round(c.value)} GB</span></div>)}</div>
     </Card>
@@ -184,15 +184,15 @@ function StorageRow({ m }: { m: Metrics }) {
   const log = 6.3 + m.tick * 0.0002;
   return (
     <div className="grid gap-5 md:grid-cols-2">
-      <Storage m={m} title="내장 디스크" mount="/" total={512} parts={[{ label: "시스템", value: 24, tone: "idle" }, { label: "이미지", value: 84, tone: "info" }, { label: "로그", value: Math.round(log * 10) / 10, tone: "progress" }]} unitRow="로그 많이 쌓는 컨테이너" rows={[{ name: "worker", value: 3.1 + m.tick * 0.0001 }, { name: "api", value: 1.8 }, { name: "edge", value: 0.9 }]} />
-      <Storage m={m} title="외장 SSD" mount="/mnt/ssd" total={2000} parts={[{ label: "볼륨", value: vol, tone: "running" }, { label: "백업", value: 132, tone: "progress" }, { label: "기타", value: 410, tone: "idle" }]} unitRow="볼륨 큰 컨테이너" rows={[...m.ct].sort((a, b) => b.vol - a.vol).slice(0, 3).map((c) => ({ name: c.name, value: c.vol }))} />
+      <Storage m={m} title="Internal disk" mount="/" total={512} parts={[{ label: "System", value: 24, tone: "idle" }, { label: "Images", value: 84, tone: "info" }, { label: "Logs", value: Math.round(log * 10) / 10, tone: "progress" }]} unitRow="Top log writers" rows={[{ name: "worker", value: 3.1 + m.tick * 0.0001 }, { name: "api", value: 1.8 }, { name: "edge", value: 0.9 }]} />
+      <Storage m={m} title="External SSD" mount="/mnt/ssd" total={2000} parts={[{ label: "Volumes", value: vol, tone: "running" }, { label: "Backups", value: 132, tone: "progress" }, { label: "Other", value: 410, tone: "idle" }]} unitRow="Largest volumes" rows={[...m.ct].sort((a, b) => b.vol - a.vol).slice(0, 3).map((c) => ({ name: c.name, value: c.vol }))} />
     </div>
   );
 }
 
 /** V2 — 띠 넷. 한 카드에 line 으로 나누거나(기본) 카드 넷으로. */
 function V2({ m, sz = "base" }: { m: Metrics; sz?: SizeId }) {
-  return <Card className="divide-y divide-line p-0">{RES.map((r) => <div key={r.id} className={SIZES[sz].pad}><Band m={m} r={r} sz={sz} /></div>)}</Card>;
+  return <Card pad="p-0" className="divide-y divide-line">{RES.map((r) => <div key={r.id} className={SIZES[sz].pad}><Band m={m} r={r} sz={sz} /></div>)}</Card>;
 }
 
 export function Lab() {
@@ -205,16 +205,16 @@ export function Lab() {
   return (
     <SplitCtx.Provider value={split}>
     <AppShell>
-      <PageHeading crumbs={[{ label: "홈", href: "#" }, { label: "리소스" }]} title="리소스" meta={<><IconText icon="server">homeserver · 8 코어 · 16 GB</IconText><IconText icon="clock">가동 {Math.floor(up / 86400)}일 {Math.floor((up % 86400) / 3600)}시간</IconText><IconText icon="project">컨테이너 {m.ct.length} 실행 중</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `1초 · ${m.tick}번째` : "멈춤"}</span></>} actions={<><Switch checked={split} onCheckedChange={setSplit} label="컨테이너별" boxed /><Switch checked={live} onCheckedChange={setLive} label="실시간" boxed /></>} />
+      <PageHeading crumbs={[{ label: "Home", href: "#" }, { label: "Resources" }]} title="Resources" meta={<><IconText icon="server">homeserver · 8 cores · 16 GB</IconText><IconText icon="clock">Up {Math.floor(up / 86400)}d {Math.floor((up % 86400) / 3600)}h</IconText><IconText icon="project">{m.ct.length} containers running</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `Live · tick ${m.tick}` : "Paused"}</span></>} actions={<><Switch checked={split} onCheckedChange={setSplit} label="By container" boxed /><Switch checked={live} onCheckedChange={setLive} label="Live" boxed /></>} />
       <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-caption text-mute">
-        <span className="inline-flex min-w-0 max-w-full items-center gap-3"><span className="shrink-0">크기</span><FilterTabs value={sz} onValueChange={(v) => setSz(v as SizeId)} items={[{ value: "base", label: "S1 기준" }, { value: "tight", label: "S2 촘촘" }, { value: "roomy", label: "S3 여유" }, { value: "chart", label: "S4 그래프" }]} /></span>
-        <span className="inline-flex min-w-0 max-w-full items-center gap-3"><span className="shrink-0">그래프</span><FilterTabs value={marks ? "marks" : "axis"} onValueChange={(v) => setMarks(v === "marks")} items={[{ value: "marks", label: "최고 · 최저" }, { value: "axis", label: "눈금" }]} /></span>
+        <span className="inline-flex min-w-0 max-w-full items-center gap-3"><span className="shrink-0">Size</span><FilterTabs value={sz} onValueChange={(v) => setSz(v as SizeId)} items={[{ value: "base", label: "S1 Base" }, { value: "tight", label: "S2 Tight" }, { value: "roomy", label: "S3 Roomy" }, { value: "chart", label: "S4 Chart" }]} /></span>
+        <span className="inline-flex min-w-0 max-w-full items-center gap-3"><span className="shrink-0">Chart</span><FilterTabs value={marks ? "marks" : "axis"} onValueChange={(v) => setMarks(v === "marks")} items={[{ value: "marks", label: "Peak · Low" }, { value: "axis", label: "Ticks" }]} /></span>
       </div>
       <div className="mt-5 space-y-5">
         <DirCtx.Provider value={{ dir: "sum", setDir: () => {}, marks }}><V2 m={m} sz={sz} /></DirCtx.Provider>
         <StorageRow m={m} />
       </div>
-      <Option id="spec" title="구성 — 실제 화면" from="AppShell + PageHeading(호스트·가동·컨테이너 수) · 띠 넷 = 제목·토글 → 그래프(끝에 현재값) → 가로 쌓은 띠 + 상위 3 · 저장 장치 둘(내장 디스크 / 외장 SSD, 같은 틀). 색은 순위 — 전체 accent, 상위 1·2·3 은 청록에서 옅게" fit="띠는 유량, 카드는 저량. SSD 를 꽂으면 카드가 하나 더 붙는다. 새 API: 컨테이너 BlockIO · /proc/diskstats · docker system df -v · 마운트 목록"><span /></Option>
+      <Option id="spec" title="Composition" from="AppShell + PageHeading (host · uptime · container count) · four bands = title·toggle → chart (current value at the end) → horizontal stacked bar + top 3 · two storage cards (internal disk / external SSD, same shape). Colour is rank — current value blue, top 1·2·3 fade to grey" fit="Bands are flow, cards are stock. Plug in an SSD and one more card appears. New APIs: container BlockIO · /proc/diskstats · docker system df -v · mount list"><span /></Option>
     </AppShell>
     </SplitCtx.Provider>
   );

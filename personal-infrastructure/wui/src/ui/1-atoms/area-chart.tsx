@@ -37,7 +37,7 @@ export function AreaChart({ series, max, height = 160, format = (v) => String(v)
             <circle cx={W} cy={y(s.points[s.points.length - 1])} r="3" fill={c} vectorEffect="non-scaling-stroke" />
           </g>); })}
       </svg>
-      {annotate && P.length > 1 && <div className="pointer-events-none absolute inset-0">{[mark(iHi, "최고", true), mark(iLo, "최저", false)]}</div>}
+      {annotate && P.length > 1 && <div className="pointer-events-none absolute inset-0">{[mark(iHi, "Peak", true), mark(iLo, "Low", false)]}</div>}
     </div>
   );
   // 눈금 — 고정폭 열. 절대 배치로 두면 라벨 길이(100% vs 2000G)만큼 그래프 시작점이 어긋난다.
