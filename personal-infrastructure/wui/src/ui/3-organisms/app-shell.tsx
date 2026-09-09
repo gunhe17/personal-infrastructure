@@ -7,7 +7,7 @@ export function AppShell({ topbar, className, children }: { topbar?: React.Compo
   return (
     <div className={cn("min-h-full bg-bg", className)}>
       <Container className="pt-4"><TopBar {...topbar} /></Container>
-      <Container className="py-8">{children}</Container>
+      <Container className="py-6 sm:py-8">{children}</Container>
     </div>
   );
 }

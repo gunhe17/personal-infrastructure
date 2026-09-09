@@ -47,6 +47,7 @@
 | `pill-on` / `on-pill` | `#3d7bff` / `#ffffff` | `#2563eb` / `#ffffff` | primary 버튼·활성 세그먼트·툴팁 (이름은 그대로, 모양은 10px) |
 | `accent` | `#3d7bff` | `#2563eb` | 스위치 손잡이·도넛·포커스 링·콜아웃 틴트 |
 | `info` / `good` / `warn` / `bad` | `#3d7bff` / `#12b76a` / `#f59e0b` / `#ef4444` | `#2563eb` / `#0f9d58` / `#d97706` / `#dc2626` | 점·배지(솔리드, 흰 글자)·delta / running / 진행 / 실패·파괴·danger 버튼 |
+| `rank-1…3` | `#22d3ee` / `#5fe3f0` / `#a5eef5` | `#0891b2` / `#38b6cc` / `#7bcfdd` | **순위 색**(2026-09-09) — 전체는 accent, 상위 1·2·3 은 한 계열에서 점점 옅게. 색이 종류가 아니라 순위를 말할 때(리소스 띠·저장 장치 카드) |
 | `tile-a…d` | `#2f6bff` / `#0ea5e9` / `#7c3aed` / `#14b8a6` (솔리드) | `#2563eb` / `#0284c7` / `#6d28d9` / `#0d9488` | 아이콘 타일·아바타, 흰 글자 |
 | `terminal` | `#080a0f` | `#0f172a` | 로그 뷰어 |
 | `--gauge` | `linear-gradient(90deg,#22d3ee,#3d7bff 55%,#8b5cf6)` | `#0891b2 → #2563eb → #6d28d9` | 게이지 채움(글자는 흰색). 라이트는 시안을 한 단계 눌러 흰 글자가 읽힌다 |
@@ -121,6 +122,7 @@ Geist(본문·숫자) · Geist Mono(기술 값) · Pretendard 한글 폴백. 굵
 - **Avatar / Breadcrumb / Pagination / TopBar** — 아바타 accent 원 + 흰 이니셜; 브레드크럼 `/` mute; 페이지네이션 = Track + IconButton(‹ ›) + Button(square, 현재만 primary); 상단 바 = Card 64px(로고 Avatar 24 · 가운데 SearchInput · 우측 StatusDot·Avatar).
 - **ButtonGroup / AvatarGroup / Meter / Tracker / Steps / Timeline / KeyValue / CopyField / RadioCards / Fieldset / Sheet / Command** (2026-09-08 조사 후 추가 — shadcn: Button Group·Command·Sheet·Item, Tremor: Category Bar·Tracker, Base UI: Meter·Fieldset 에서 가져와 우리 문법으로) — 버튼 묶음은 card-2 한 덩어리에 사이 line; 아바타 겹침 `-ms-2` + `ring-card`, 넘치면 `+N` card-3; Meter 는 card-3 트랙에 톤 칸 + StatusDot 범례 + mono 합계; Tracker 는 h-8 막대(good·warn·bad·card-3) + Tooltip; Steps 는 24px 원(done accent+check, current card-3+accent outline, failed bad+close, upcoming card-3) + 선(line, done 은 accent); Timeline 은 line 위에 Dot(ring-bg) + Mono 시각 + 제목/설명; KeyValue 는 `[160px_1fr]` 정의 목록, 기술 값 Mono; CopyField 는 readOnly mono Input + copy→check IconButton(1.5s); RadioCards 는 card-2 카드가 선택되면 card-3 + 우상단 accent 원 check, pressable; Fieldset 은 title 17/500 + 힌트 + `space-y-4`; Sheet 는 화면 오른쪽 inset 12 의 Card(420/640) enter-side + 닫기 IconButton; Command 는 위쪽 96 의 popup 레시피 + SearchInput + ITEM(Icon·라벨·힌트·Kbd), ↑↓ Enter Esc.
 - **Popover / Accordion / Toast** — 팝오버 popup 바탕 12px 링 288px; 아코디언은 Card(p-2) 안에 항목(p-1, 10px)을 8px 간격으로 쌓고 line 없음, 화살표 flip-open. 항목 안의 트리거 행은 px-3 py-3, 8px 둥글기, hover card-3. **열린 항목은 card-2 블록**(`data-open`, 안쪽 토큰은 surface-2)이 되고 그 안에서 트리거 hover 상자와 내용 사이 12, 내용과 블록 바닥 12, 내용은 트리거 글자와 같은 x 에 놓인다 — 사용자 요청(2026-09-08): 토글됐을 때 요소 사이에 여백이 있어야 한다; 토스트는 우하단 card-2 링 + 유형 점(success good · error bad · warning warn · 기본 accent), `useToast().add({ title, description, type })`.
+- **AreaChart** — 시계열 면 그래프. `annotate` 면 축 눈금·격자 대신 최고(점선 + 점 위 라벨)·최저(그래프 아래 라벨)·지금 점 후광을 그린다. `nowLabel`/`nowNote` 는 그래프 오른쪽에 마지막 점 높이로 현재값을 세운다(보이지 않는 사본이 자리를 잡고, 위아래 14 로 클램프해 제목 줄과 겹치지 않는다). `legend={false}` 면 아래 범례를 끈다 — 오른쪽 목록이 범례일 때.
 - **Sparkline / ListRow / StatTrend / IconText** — 스파크라인 160×40(`fluid` 면 폭 100%, `non-scaling-stroke`) 톤 색 + 15% 면; 아이콘 행 = Tile + 17px 제목 + mute 부제 + 우측 값(`onClick` 이 있으면 행 전체가 interactive 버튼); 추세 지표 = Card + display 값 + Badge(sm, Icon up/down) + 남는 폭을 채우는 스파크라인; IconText = Icon(sm) + mute 텍스트(날짜·스택). (육각 레이더는 제거)
 
 ## 아이콘 (`wui/src/ui/0-tokens/icon.tsx`)
@@ -249,6 +251,10 @@ Geist(본문·숫자) · Geist Mono(기술 값) · Pretendard 한글 폴백. 굵
 | Avatars · Badges · Dropdowns · Buttons · Button groups | Avatar(status)/AvatarGroup · Badge/Chip/StatusDot · Menu · Button/IconButton/Link · ButtonGroup |
 | Containers · Cards · List containers · Media objects · Dividers | Container · Card · List · ListRow · Separator(label) |
 | Page examples (home · detail · settings) | Analytics · DetailScreen · SettingsScreen (셋 다 캔버스 테마를 따름) |
+
+## 반응형 (2026-09-09, 사용자 요청 "전체 페이지 반응형")
+
+페이지는 420 부터 1280 까지 가로 스크롤 없이 선다. 규칙: **여백은 sm(640) 에서 한 단계**(Container `px-4 → sm:px-6`, AppShell `py-6 → sm:py-8`, Card `p-5 → sm:p-6`), **머리는 sm 에서 가로로**(PageHeading 은 좁으면 동작이 제목 아래로 내려간다), **카드 안 다열 배치는 컨테이너 쿼리**(`@container` + `@3xl`) — 창이 아니라 카드 폭이 기준이라 사이드바·격자 안에서도 맞는다. 긴 이름은 `truncate`, 세그먼트 줄은 `flex-wrap` + 라벨 `shrink-0`. 새 화면은 420·640·820·1024·1280 다섯 폭에서 `scrollWidth === clientWidth` 를 확인한다.
 
 ## 라이트 검증 (2026-09-08)
 
