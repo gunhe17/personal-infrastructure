@@ -59,7 +59,7 @@ export function ResourceBand({ label, value, points, parts = [], pct, max, forma
   );
 }
 
-/** [유기체] ResourceBands — 띠를 한 카드에 line 으로 나눠 쌓는다. 안쪽 여백은 카드와 같은 20/24. */
+/** [유기체] ResourceBands — 띠를 한 카드에 line 으로 나눠 쌓는다. 카드는 여백 0, 행이 20/24 를 가진다(첫 행 위·끝 행 아래가 곧 카드 안쪽 여백). */
 export function ResourceBands({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={cn("divide-y divide-line rounded-card bg-card [&>*]:p-5 sm:[&>*]:p-6", className)}>{children}</div>;
 }

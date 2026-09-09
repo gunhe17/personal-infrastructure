@@ -23,7 +23,8 @@ export function DeviceList({ title = "Devices", devices, span = "30d", format = 
 }) {
   return (
     <Card title={title} className={className}>
-      <div className="divide-y divide-line">
+      {/* 첫·끝 행의 바깥쪽 여백은 카드가 맡는다 — 겹치면 머리 아래가 40 이 되어 다른 카드와 어긋난다 */}
+      <div className="divide-y divide-line [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">
         {devices.map((d) => {
           const pct = Math.min(100, (d.used / d.total) * 100), tone = usageTone(pct), color = usageColor(pct);
           return (

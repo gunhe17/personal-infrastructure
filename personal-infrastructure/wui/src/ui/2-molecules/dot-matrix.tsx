@@ -8,7 +8,7 @@ export function DotMatrix({ groups, className }: { groups: { label: string; cell
     <div className={cn("flex gap-6", className)}>
       {groups.map((g) => (
         <div key={g.label}><p className="mb-3 text-body text-mute">{g.label}</p>
-          <div className="grid grid-cols-7 gap-x-3.5 gap-y-3">{g.cells.map((on, i) => <Dot key={i} tone={on ? "info" : "idle"} pulse={false} className={cn("size-[7px]", !on && "bg-card-3")} />)}</div>
+          <div className="grid grid-cols-7 gap-x-4 gap-y-3">{g.cells.map((on, i) => <Dot key={i} tone={on ? "info" : "idle"} pulse={false} className={cn("size-[7px]", !on && "bg-card-3")} />)}</div>
         </div>
       ))}
     </div>
