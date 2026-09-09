@@ -35,6 +35,7 @@ export function SideNav({ brand = "homeserver", projects, project, onProjectChan
     <nav className={cn("flex w-[240px] shrink-0 flex-col gap-1 bg-card p-3", className)} aria-label="서비스 내비게이션">
       <span className="flex items-center gap-3 px-2 py-1"><Avatar name="P" size={32} /><span className="truncate text-body font-medium text-text">{brand}</span></span>
       <Separator className="my-2" />
+      {projects.length === 0 && <p className="px-3 py-2 text-caption text-mute">No projects yet</p>}
       {projects.map((p) => {
         const on = p.value === project;
         return (

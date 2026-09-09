@@ -326,6 +326,7 @@ export function Canvas() {
           <IconButton size="sm" label="Lab" icon="insight" onClick={() => { location.hash = "#lab"; }} />
           <IconButton size="sm" label="Storage Lab" icon="volume" onClick={() => { location.hash = "#storage"; }} />
           <IconButton size="sm" label="Layout Lab" icon="layers" onClick={() => { location.hash = "#layout"; }} />
+          <IconButton size="sm" label="앱 열기" icon="external" onClick={() => { location.hash = "#login"; }} />
           <span className="mx-0.5 h-5 w-px bg-line" />
           <IconButton size="sm" label="축소" icon="remove" onClick={() => animateTo(zoomRef.current / 1.2)} />
           <Button size="sm" variant="ghost" aria-label="원래 크기" onClick={() => animateTo(1)} className="min-w-12 px-1.5 font-mono tabular-nums">{label}%</Button>
