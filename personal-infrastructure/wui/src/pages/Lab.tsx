@@ -5,9 +5,9 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 const rnd = (seed: number) => { let x = seed; return () => { x = (x * 9301 + 49297) % 233280; return x / 233280; }; };
 const walk = (seed: number, n: number, base: number, amp: number) => { const r = rnd(seed); let v = base; return Array.from({ length: n }, () => { v = Math.max(0, v + (r() - 0.5) * amp); return Math.round(v * 10) / 10; }); };
 type Ct = { name: string; stack: string; cpu: number; mem: number; memLimit: number; uptime: string; restarts: number; status: string; spark: number[]; memSpark: number[]; ioSpark: number[]; netSpark: number[]; wr: number; rd: number; wrRate: number; rdRate: number; vol: number; rx: number; tx: number; rxRate: number; txRate: number };
-type Metrics = { h: { cpu: number[]; mem: number[]; disk: number[]; net_in: number[]; net_out: number[] }; ct: Ct[]; tick: number };
+type Metrics = { h: { cpu: number[]; mem: number[]; disk: number[]; disk_rd: number[]; disk_wr: number[]; net_in: number[]; net_out: number[] }; ct: Ct[]; tick: number };
 const seed = (): Metrics => ({
-  h: { cpu: walk(1, 90, 22, 4), mem: walk(2, 90, 6.1, 0.2), disk: walk(3, 90, 212, 0.1), net_in: walk(4, 90, 12, 4), net_out: walk(5, 90, 10, 3) },
+  h: { cpu: walk(1, 90, 22, 4), mem: walk(2, 90, 6.1, 0.2), disk: walk(3, 90, 212, 0.1), disk_rd: walk(6, 90, 2, 0.5), disk_wr: walk(7, 90, 3, 0.5), net_in: walk(4, 90, 12, 4), net_out: walk(5, 90, 10, 3) },
   ct: [
     { name: "api", ioSpark: walk(31, 90, 1.3, 0.65), netSpark: walk(41, 90, 8, 4.0), stack: "dockerfile", cpu: 12, mem: 1.4, memLimit: 2, uptime: "6일 4시간", restarts: 0, status: "running", spark: walk(11, 90, 12, 6), memSpark: walk(21, 90, 1.4, 0.2), wr: 3.7, rd: 254.9, wrRate: 0.2, rdRate: 1.1, vol: 12, rx: 18.6, tx: 90.2, rxRate: 6, txRate: 2 },
     { name: "blog", ioSpark: walk(32, 90, 0.1, 0.1), netSpark: walk(42, 90, 4, 2.0), stack: "static", cpu: 1, mem: 0.1, memLimit: 0.5, uptime: "14일", restarts: 0, status: "running", spark: walk(12, 90, 1, 1), memSpark: walk(22, 90, 0.1, 0.02), wr: 0, rd: 15.4, wrRate: 0, rdRate: 0.1, vol: 0.4, rx: 2.1, tx: 40.5, rxRate: 1, txRate: 3 },
@@ -50,7 +50,7 @@ const step = (m: Metrics): Metrics => {
   const mem = Math.round((sum((c) => c.mem) + 0.6) * 10) / 10;
   const disk = Math.round((last(m.h.disk) + 0.004 + (sim.jobLeft > 0 ? 0.01 : 0)) * 100) / 100; // 천천히 찬다
   sim.t = t;
-  return { tick: m.tick + 1, ct, h: { cpu: push(m.h.cpu, cpu), mem: push(m.h.mem, mem), disk: push(m.h.disk, disk), net_in: push(m.h.net_in, Math.round(sum((c) => c.rxRate) * 10) / 10), net_out: push(m.h.net_out, Math.round(sum((c) => c.txRate) * 10) / 10) } };
+  return { tick: m.tick + 1, ct, h: { cpu: push(m.h.cpu, cpu), mem: push(m.h.mem, mem), disk: push(m.h.disk, disk), disk_rd: push(m.h.disk_rd, Math.round(sum((c) => c.rdRate) * 10) / 10), disk_wr: push(m.h.disk_wr, Math.round(sum((c) => c.wrRate) * 10) / 10), net_in: push(m.h.net_in, Math.round(sum((c) => c.rxRate) * 10) / 10), net_out: push(m.h.net_out, Math.round(sum((c) => c.txRate) * 10) / 10) } };
 };
 const last = (a: number[]) => a[a.length - 1];
 function useLive(on: boolean) {
@@ -71,23 +71,38 @@ function Option({ id, title, from, fit, children }: { id: string; title: string;
 
 type Res = "cpu" | "mem" | "disk" | "net";
 // ── 한눈에 보기 — 네 리소스가 동시에 보이는 경우의 수 ─────────────────────────
-const RES: { id: Res; label: string; unit: (c: Ct) => string; raw: (c: Ct) => number; pct: (c: Ct) => number; tone: (c: Ct) => "accent" | "good" | "warn" | "bad" }[] = [
-  { id: "cpu", label: "CPU", unit: (c) => `${Math.round(c.cpu)}%`, raw: (c) => c.cpu, pct: (c) => c.cpu, tone: (c) => (c.cpu > 30 ? "warn" : "accent") },
-  { id: "mem", label: "메모리", unit: (c) => `${c.mem.toFixed(1)} GB`, raw: (c) => c.mem, pct: (c) => (c.mem / c.memLimit) * 100, tone: (c) => (c.mem / c.memLimit > 0.9 ? "bad" : "good") },
-  { id: "disk", label: "디스크 I/O", unit: (c) => `${(c.wrRate + c.rdRate).toFixed(1)} MB/s`, raw: (c) => c.wrRate + c.rdRate, pct: (c) => Math.min(100, (c.wrRate + c.rdRate) * 5), tone: () => "accent" },
-  { id: "net", label: "네트워크", unit: (c) => `${(c.rxRate + c.txRate).toFixed(1)} Mb/s`, raw: (c) => c.rxRate + c.txRate, pct: (c) => Math.min(100, (c.rxRate + c.txRate) * 2), tone: () => "good" },
+const RES: { id: Res; label: string; unit: (c: Ct) => string; fmt: (v: number) => string; raw: (c: Ct) => number; pct: (c: Ct) => number; tone: (c: Ct) => "accent" | "good" | "warn" | "bad" }[] = [
+  { id: "cpu", label: "CPU", unit: (c) => `${Math.round(c.cpu)}%`, fmt: (v) => `${Math.round(v)}%`, raw: (c) => c.cpu, pct: (c) => c.cpu, tone: (c) => (c.cpu > 30 ? "warn" : "accent") },
+  { id: "mem", label: "메모리", unit: (c) => `${c.mem.toFixed(1)} GB`, fmt: (v) => `${v.toFixed(1)} GB`, raw: (c) => c.mem, pct: (c) => (c.mem / c.memLimit) * 100, tone: (c) => (c.mem / c.memLimit > 0.9 ? "bad" : "good") },
+  { id: "disk", label: "디스크 I/O", unit: (c) => `${(c.wrRate + c.rdRate).toFixed(1)} MB/s`, fmt: (v) => `${v.toFixed(1)} MB/s`, raw: (c) => c.wrRate + c.rdRate, pct: (c) => Math.min(100, (c.wrRate + c.rdRate) * 5), tone: () => "accent" },
+  { id: "net", label: "네트워크", unit: (c) => `${(c.rxRate + c.txRate).toFixed(1)} Mb/s`, fmt: (v) => `${v.toFixed(1)} Mb/s`, raw: (c) => c.rxRate + c.txRate, pct: (c) => Math.min(100, (c.rxRate + c.txRate) * 2), tone: () => "good" },
 ];
 const CHART = ["var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"]; // 컨테이너 색 넷 — 전체(accent)와 겹치지 않게 chart-1 은 안 쓴다
 const colorOfCt = (m: Metrics, name: string) => CHART[m.ct.findIndex((c) => c.name === name) % CHART.length];
 const sparkOf = (c: Ct, id: Res) => ({ cpu: c.spark, mem: c.memSpark, disk: c.ioSpark, net: c.netSpark }[id]);
 const SplitCtx = createContext(false);
-const hostOf = (H: Metrics["h"], id: Res) => ({
+// 방향이 있는 유량 — 디스크 I/O(읽기·쓰기)와 네트워크(받음·보냄). 띠 안 토글로 합·a·b 를 고른다(사용자 결정 2026-09-09).
+// 점유율: 디스크는 한 장치라 합을, 네트워크는 양방향이 따로라 max(in, out) 을 상한(cap, 설정값)에 댄다.
+type Dir = "sum" | "a" | "b";
+const DIRS = {
+  disk: { a: { label: "읽기", ct: (c: Ct) => c.rdRate, host: (H: Metrics["h"]) => H.disk_rd }, b: { label: "쓰기", ct: (c: Ct) => c.wrRate, host: (H: Metrics["h"]) => H.disk_wr }, cap: 50, combine: "sum" as const, unit: "MB/s", yfmt: (v: number) => `${v}M`, tones: ["info", "warn"] as const, glyph: null },
+  net: { a: { label: "받음", ct: (c: Ct) => c.rxRate, host: (H: Metrics["h"]) => H.net_in }, b: { label: "보냄", ct: (c: Ct) => c.txRate, host: (H: Metrics["h"]) => H.net_out }, cap: 100, combine: "max" as const, unit: "Mb/s", yfmt: (v: number) => `${v}`, tones: ["good", "accent"] as const, glyph: ["↓", "↑"] as [string, string] },
+};
+const r1 = (v: number) => Math.round(v * 10) / 10;
+const dirHost = (id: "disk" | "net", H: Metrics["h"], dir: Dir) => {
+  const D = DIRS[id], A = D.a.host(H), B = D.b.host(H), a = last(A), b = last(B), g = D.glyph ?? ["", ""];
+  if (dir === "sum") {
+    const v = D.combine === "max" ? Math.max(a, b) : a + b;
+    return { value: D.glyph ? `${g[0]}${Math.round(a)} ${g[1]}${Math.round(b)}` : `${r1(a + b)} ${D.unit}`, sub: D.glyph ? D.unit : `${D.a.label} ${r1(a)} · ${D.b.label} ${r1(b)}`, series: [{ name: D.a.label, points: A, tone: D.tones[0] }, { name: D.b.label, points: B, tone: D.tones[1] }], total: A.map((x, i) => r1(x + B[i])), max: undefined, pct: Math.min(100, (v / D.cap) * 100), tv: D.glyph ? `${g[0]}${Math.round(a)} ${g[1]}${Math.round(b)}` : `${r1(a + b)} ${D.unit}`, fmt: D.yfmt };
+  }
+  const k = dir === "a" ? D.a : D.b, P = dir === "a" ? A : B, v = last(P), gg = dir === "a" ? g[0] : g[1];
+  const sv = D.glyph ? Math.round(v) : r1(v);
+  return { value: `${gg}${sv} ${D.unit}`, sub: k.label, series: [{ name: k.label, points: P, tone: D.tones[dir === "a" ? 0 : 1] }], total: P, max: undefined, pct: Math.min(100, (v / D.cap) * 100), tv: `${gg}${sv} ${D.unit}`, fmt: D.yfmt };
+};
+const hostOf = (H: Metrics["h"], id: "cpu" | "mem") => ({
   cpu: { value: `${Math.round(last(H.cpu))}%`, sub: "8 코어", series: [{ name: "호스트", points: H.cpu, tone: "accent" as const }], total: H.cpu, max: 100, pct: last(H.cpu), tv: `${Math.round(last(H.cpu))}%`, fmt: (v: number) => `${v}%` },
   mem: { value: `${last(H.mem).toFixed(1)} GB`, sub: "16 GB 중", series: [{ name: "사용", points: H.mem, tone: "info" as const }], total: H.mem, max: 16, pct: (last(H.mem) / 16) * 100, tv: `${last(H.mem).toFixed(1)} GB`, fmt: (v: number) => `${v}G` },
-  disk: { value: `${(last(H.net_out) / 6 + last(H.net_in) / 9).toFixed(1)} MB/s`, sub: `읽기 ${(last(H.net_out) / 6).toFixed(1)} · 쓰기 ${(last(H.net_in) / 9).toFixed(1)}`, series: [{ name: "읽기", points: H.net_out.map((v) => v / 6), tone: "info" as const }, { name: "쓰기", points: H.net_in.map((v) => v / 9), tone: "warn" as const }], total: H.net_out.map((v, i) => Math.round((v / 6 + H.net_in[i] / 9) * 10) / 10), max: undefined, pct: Math.min(100, (last(H.net_out) / 6 + last(H.net_in) / 9) * 5), tv: `${(last(H.net_out) / 6 + last(H.net_in) / 9).toFixed(1)} MB/s`, fmt: (v: number) => `${v}M` },
-  net: { value: `↓${Math.round(last(H.net_in))} ↑${Math.round(last(H.net_out))}`, sub: "Mb/s", series: [{ name: "받음", points: H.net_in, tone: "good" as const }, { name: "보냄", points: H.net_out, tone: "accent" as const }], total: H.net_in.map((v, i) => Math.round((v + H.net_out[i]) * 10) / 10), max: undefined, pct: Math.min(100, last(H.net_in) + last(H.net_out)), tv: `${Math.round(last(H.net_in) + last(H.net_out))} Mb/s`, fmt: (v: number) => `${v}` },
 }[id]);
-const topOf = (CT: Ct[], r: (typeof RES)[number], n = 3) => [...CT].sort((a, b) => r.pct(b) - r.pct(a)).slice(0, n);
 
 /** 띠 크기 규격 — 간격·여백·글자·그래프 높이 한 벌. 여섯 벌을 Lab 에 나란히 놓고 고른다(사용자 요청 2026-09-09). */
 type Size = { pad: string; gap: string; cols: string; chart: number; label: string; value: string; row: string; dot: string; rows: string; after: string; head?: boolean; cards?: boolean };
@@ -104,16 +119,19 @@ type SizeId = keyof typeof SIZES;
 /** 리소스 띠 — 요약 한 줄: 이름·값 · 시계열 · 오른쪽 쌓은 띠 + 정렬된 행(전체·상위 3). 오른쪽이 곧 범례다(그래프 아래 범례 없음). 사용자 선택 2026-09-09: V2-3-c. */
 function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?: SizeId }) {
   const z: Size = SIZES[sz];
-  const h = hostOf(m.h, r.id);
+  const [dir, setDir] = useState<Dir>("sum");
+  const D = r.id === "disk" || r.id === "net" ? DIRS[r.id] : null;
+  const h = D ? dirHost(r.id as "disk" | "net", m.h, dir) : hostOf(m.h, r.id as "cpu" | "mem");
   const split = useContext(SplitCtx);
-  const top = topOf(m.ct, r);
+  const raw = (c: Ct) => (!D || dir === "sum" ? r.raw(c) : (dir === "a" ? D.a : D.b).ct(c)); // 토글 방향의 컨테이너 값
+  const top = [...m.ct].sort((a, b) => raw(b) - raw(a)).slice(0, 3);
   // 컨테이너별 — 합계는 accent 면으로 남기고, 상위 3 은 각자 색의 선으로 얹는다(면 없음). 색은 오른쪽 막대와 같다.
   const n = h.series[0].points.length;
   const series = split
     ? [{ name: "전체", points: h.total, tone: "accent" as const }, ...top.map((c) => ({ name: c.name, points: sparkOf(c, r.id).concat(sparkOf(c, r.id)).slice(-n), color: colorOfCt(m, c.name), fill: false }))]
     : h.series;
-  const all = m.ct.reduce((a, c) => a + r.raw(c), 0) || 1; // 컨테이너 합 — 몫(share)의 분모
-  const share = (c: Ct) => (h.pct * r.raw(c)) / all; // 전체 막대 안에서 이 컨테이너가 차지하는 폭
+  const all = m.ct.reduce((a, c) => a + raw(c), 0) || 1; // 컨테이너 합 — 몫(share)의 분모
+  const share = (c: Ct) => (h.pct * raw(c)) / all; // 전체 막대 안에서 이 컨테이너가 차지하는 폭
   const ACC = "var(--accent)";
   const rest = Math.max(0, h.pct - top.reduce((a, c) => a + share(c), 0)); // 상위 3 밖의 나머지 사용량
   const row = (name: string, color: string, value: string, strong?: boolean) => (
@@ -123,11 +141,12 @@ function Band({ m, r, sz = "base" }: { m: Metrics; r: (typeof RES)[number]; sz?:
     ? <div className="space-y-1.5">{top.map((c) => <div key={c.name} className="grid grid-cols-[80px_1fr_80px] items-center gap-2"><span className="truncate text-caption text-text">{c.name}</span><Progress value={r.pct(c)} tone={r.tone(c)} className="[&>div:first-child]:hidden" /><span className="text-end font-mono text-caption tabular-nums text-mute">{r.unit(c)}</span></div>)}</div>
     : <div>
         <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-card-3">{top.map((c) => <span key={c.name} className="h-full rounded-full move" style={{ width: `${share(c)}%`, background: colorOfCt(m, c.name) }} />)}<span className="h-full rounded-full move" style={{ width: `${rest}%`, background: ACC, opacity: 0.35 }} /></div>
-        <div className={cn(z.after, z.rows)}>{row("전체", ACC, h.tv, true)}{top.map((c) => row(c.name, colorOfCt(m, c.name), r.unit(c)))}</div>
+        <div className={cn(z.after, z.rows)}>{row("전체", ACC, h.tv, true)}{top.map((c) => row(c.name, colorOfCt(m, c.name), r.fmt(raw(c))))}</div>
       </div>;
+  const toggle = D && <FilterTabs size="sm" value={dir} onValueChange={setDir} items={[{ value: "sum", label: "합" }, { value: "a", label: D.a.label }, { value: "b", label: D.b.label }]} className={z.head ? "" : "mt-2 w-full"} />;
   const head = z.head
-    ? <div className="flex items-baseline gap-3"><span className={cn(z.label, "text-mute")}>{r.label}</span><span className={cn(z.value, "tabular-nums text-text")}>{h.value}</span><span className="text-caption text-mute">{h.sub}</span></div>
-    : <div><p className={cn(z.label, "text-mute")}>{r.label}</p><p className={cn("mt-1 tabular-nums text-text", z.value)}>{h.value}</p><p className="text-caption text-mute">{h.sub}</p></div>;
+    ? <div className="flex items-baseline gap-3"><span className={cn(z.label, "text-mute")}>{r.label}</span><span className={cn(z.value, "tabular-nums text-text")}>{h.value}</span><span className="text-caption text-mute">{h.sub}</span>{toggle}</div>
+    : <div><p className={cn(z.label, "text-mute")}>{r.label}</p><p className={cn("mt-1 tabular-nums text-text", z.value)}>{h.value}</p>{toggle ?? <p className="text-caption text-mute">{h.sub}</p>}</div>;
   const chart = <div className="ps-8"><AreaChart series={series} max={h.max} height={z.chart} format={h.fmt} legend={!split} /></div>;
   return (
     <div className={cn("grid items-center", z.gap, z.cols)}>
