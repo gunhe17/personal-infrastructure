@@ -23,11 +23,11 @@ export function AreaChart({ series, max, height = 160, format = (v) => String(v)
               <circle cx={W} cy={y(s.points[s.points.length - 1])} r="3" fill={c} vectorEffect="non-scaling-stroke" />
             </g>); })}
         </svg>
-        <div className="pointer-events-none absolute inset-y-0 -start-1 flex -translate-x-full flex-col justify-between font-mono text-[11px] tabular-nums text-mute">
+        <div className="pointer-events-none absolute inset-y-0 -start-1 flex -translate-x-full flex-col justify-between font-mono text-[11px] leading-4 tabular-nums text-mute">
           {ticks.map((t) => <span key={t} className="-translate-y-1/2 first:translate-y-0 last:-translate-y-full">{format(Math.round(top * t))}</span>)}
         </div>
       </div>
-      {xLabels && <div className="mt-2 flex justify-between font-mono text-[11px] tabular-nums text-mute">{xLabels.map((l, i) => <span key={i}>{l}</span>)}</div>}
+      {xLabels && <div className="mt-2 flex justify-between font-mono text-[11px] leading-4 tabular-nums text-mute">{xLabels.map((l, i) => <span key={i}>{l}</span>)}</div>}
       {legend && series.length > 1 && <div className="mt-3 flex flex-wrap gap-4">{series.map((s) => <span key={s.name} className="inline-flex items-center gap-2 text-caption text-mute"><span className="size-2 rounded-full" style={{ background: colorOf(s) }} />{s.name}</span>)}</div>}
     </div>
   );
