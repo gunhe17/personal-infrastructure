@@ -136,18 +136,32 @@ const freeCol = (d: (typeof DEVICES)[number]) => (
   </span>
 );
 
-/** E1 — 지금 것. 이름 · 사용률 막대 · 여유. 가장 짧다. */
+/** E1 — 막대 위에 사용량·총량, 오른쪽에 30일 용량 변화 그래프(사용자 지정 2026-09-09). */
 function E1() {
   return (
     <Card title="Devices" subtitle={`${DEVICES.length} mounts · ${GB(DEVICES.reduce((a, d) => a + d.total - used(d), 0))} free in total`}>
       <div className="divide-y divide-line">
-        {DEVICES.map((d) => (
-          <div key={d.id} className="grid grid-cols-[200px_1fr_140px] items-center gap-4 py-4">
-            <DevName d={d} />
-            <Progress value={(used(d) / d.total) * 100} color={tone(d)} className="[&>div:first-child]:hidden" />
-            {freeCol(d)}
-          </div>
-        ))}
+        {DEVICES.map((d) => {
+          const pct = (used(d) / d.total) * 100, warn = pct > 60;
+          return (
+            <div key={d.id} className="grid grid-cols-[180px_1fr_160px] items-center gap-6 py-4">
+              <DevName d={d} />
+              <span className="min-w-0">
+                {/* 막대 위 — 왼쪽은 지금 쓰는 양, 오른쪽은 총량 */}
+                <span className="mb-2 flex items-baseline justify-between gap-3 text-caption">
+                  <span className="font-mono tabular-nums" style={{ color: tone(d) }}>{GB(used(d))} used <span className="text-mute">· {Math.round(pct)}%</span></span>
+                  <span className="font-mono tabular-nums text-mute">{GB(d.total)}</span>
+                </span>
+                <Progress value={pct} color={tone(d)} className="[&>div:first-child]:hidden" />
+              </span>
+              {/* 오른쪽 — 30일 용량 변화 */}
+              <span className="justify-self-end text-end">
+                <Sparkline fluid points={d.hist} tone={warn ? "warn" : "accent"} height={32} className="block w-[160px]" />
+                <span className="mt-1 block font-mono text-caption tabular-nums text-mute">+{growth(d.hist).toFixed(1)} GB/day · 30d</span>
+              </span>
+            </div>
+          );
+        })}
       </div>
     </Card>
   );
@@ -276,7 +290,7 @@ export function StorageLab() {
         <Option id="s-b" title="B · Runway — when does it fill" from="30일 추이 + 하루 증가량으로 남은 날을 계산해 큰 숫자로" fit="용량은 며칠 단위로 변한다. '언제 손대야 하나' 가 진짜 질문"><B /></Option>
         <Option id="s-c" title="C · Reclaimable — what can go" from="회수 가능 용량을 하나로 모으고 항목마다 근거와 동작" fit="꽉 찼을 때 바로 누를 것이 있다. dangling·오래된 백업·고아 볼륨"><C /></Option>
         <Option id="s-d" title="D · Volumes — project and backup" from="볼륨마다 프로젝트 연결·크기·마지막 백업" fit="고아 볼륨과 백업 안 된 볼륨을 찾는다"><D /></Option>
-        <Option id="s-e1" title="E1 · Devices — plain row" from="이름 · 사용률 막대 · 여유. 장치 하나에 한 줄" fit="장치가 많아도 화면이 안 는다. 가장 짧은 형태"><E1 /></Option>
+        <Option id="s-e1" title="E1 · Devices — usage on the bar, trend on the right" from="막대 위에 사용량·%·총량, 오른쪽에 30일 용량 변화" fit="한 줄에서 지금과 흐름을 같이 읽는다. 장치가 늘어도 줄만 는다"><E1 /></Option>
         <Option id="s-e2" title="E2 · Split bar — what fills it" from="막대를 종류(이미지·볼륨·백업)로 쪼개고 아래 색 점 범례" fit="한 줄에서 '무엇이 차지하나' 까지. 줄 높이가 조금 는다"><E2 /></Option>
         <Option id="s-e3" title="E3 · Trend — 30일 추이와 남은 날" from="스파크라인 + GB/일 + 남은 날. 임박한 장치는 warn 색" fit="'언제 손대야 하나' 를 목록에서 바로. 네 열이 필요하다"><E3 /></Option>
         <Option id="s-e4" title="E4 · Expandable — 그 자리에서 세부" from="행을 누르면 종류 Meter · 장치 정보 · 상위 항목이 펼쳐진다" fit="목록은 짧게 두고 필요한 장치만 깊게. 별도 화면이 필요 없다"><E4 /></Option>
