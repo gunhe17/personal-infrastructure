@@ -31,14 +31,9 @@ function Option({ id, title, from, fit, children }: { id: string; title: string;
   );
 }
 
-/** 장치 이름 칸 — 변형이 공유한다. */
-function DevName({ d, sub }: { d: (typeof DEVICES)[number]; sub?: React.ReactNode }) {
-  return (
-    <span className="min-w-0">
-      <span className="block truncate text-body font-medium text-text">{d.title}</span>
-      <span className="block truncate font-mono text-caption text-mute">{sub ?? `${d.mount} · ${d.dev}`}</span>
-    </span>
-  );
+/** 장치 이름 칸 — 이름만(사용자 지정 2026-09-09: 마운트·장치명 제거). 변형이 공유한다. */
+function DevName({ d }: { d: (typeof DEVICES)[number] }) {
+  return <span className="block truncate text-body font-medium text-text">{d.title}</span>;
 }
 
 /** 예측 — 지금 기울기로 그대로 가면 언제 상한에 닿나. 실선 뒤에 점선으로 잇는다. */
