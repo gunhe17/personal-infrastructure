@@ -23,4 +23,6 @@ export const verify = async (password: string) => {
   return ok;
 };
 export const signedIn = () => get(SESSION, sessionStorage) === "1";
+/** 개발용 초기화 — 비밀번호를 잊었을 때 최초 설정으로 되돌린다. 서버가 붙으면 사라진다. */
+export const resetAdmin = () => { try { localStorage.removeItem(ADMIN); sessionStorage.removeItem(SESSION); } catch { /* 무시 */ } };
 export const signOut = () => { try { sessionStorage.removeItem(SESSION); } catch { /* 무시 */ } };
