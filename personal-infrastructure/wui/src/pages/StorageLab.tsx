@@ -1,8 +1,6 @@
-import { AppShell, AreaChart, Card, cn, DeviceList, Dot, IconText, NOW, PageHeading, Progress, SectionHeading, Sparkline } from "@/ui";
+import { AppShell, AreaChart, Card, cn, DeviceList, Dot, formatGB as GB, formatGBShort as AX, IconText, NOW, PageHeading, Progress, SectionHeading, Sparkline } from "@/ui";
 
 // Devices Lab — 장치 한 줄을 어떻게 표현할 것인가. V1 이 확정되어 `DeviceList` 로 승격됐고, V2~V5 는 비교용으로 남는다.
-const GB = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1)} TB` : v >= 10 ? `${Math.round(v)} GB` : `${v.toFixed(1)} GB`);
-const AX = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1)}T` : `${Math.round(v)}G`); // 눈금은 짧게 — 36px 열에서 접히지 않게
 const day = (n: number) => (n >= 365 ? `${Math.floor(n / 365)}년 ${Math.floor((n % 365) / 30)}개월` : n >= 60 ? `${Math.floor(n / 30)}개월` : `${n}일`);
 
 // 내장 디스크는 차오르는 중(388→409 GB) — 상태·추세 변형이 실제로 보이게 한 가짜 값.

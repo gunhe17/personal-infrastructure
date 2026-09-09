@@ -10,7 +10,7 @@ const TOP: { name: string; sub: string; value: string; icon: IconName }[] = [{ n
 /** [유기체] TopProjects = Card + IconButton + ListRow(Tile + Icon) × 3. */
 export function TopProjects() {
   return (
-    <Card title="상위 프로젝트" subtitle={<><span className="text-text">178</span> 개 배포</>} actions={<IconButton label="더" icon="more" />}>
+    <Card title="상위 프로젝트" actions={<IconButton label="더" icon="more" />}>
       <ul className="space-y-5">{TOP.map((t) => <li key={t.name}><ListRow lead={<Tile><Icon name={t.icon} /></Tile>} title={t.name} sub={t.sub} value={t.value} /></li>)}</ul>
     </Card>
   );

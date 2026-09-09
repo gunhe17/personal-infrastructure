@@ -3,3 +3,9 @@
 export const NOW = "var(--now)";
 export const RANK = ["var(--rank-1)", "var(--rank-2)", "var(--rank-3)"];
 export const rankColor = (i: number) => RANK[i % RANK.length];
+
+/** 사용률(%) → 상태 톤. 60 넘으면 주의, 80 넘으면 경고. 숫자·막대·그래프가 이 하나를 같이 쓴다. */
+export type UsageTone = "accent" | "warn" | "bad";
+export const usageTone = (pct: number): UsageTone => (pct > 80 ? "bad" : pct > 60 ? "warn" : "accent");
+export const USAGE_COLOR: Record<UsageTone, string> = { accent: NOW, warn: "var(--warn)", bad: "var(--bad)" };
+export const usageColor = (pct: number) => USAGE_COLOR[usageTone(pct)];

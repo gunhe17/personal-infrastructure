@@ -11,7 +11,6 @@
   --terminal: #080a0f; --grid: #7ea2ff1f;
   --gauge: linear-gradient(90deg, #22d3ee, #3d7bff 55%, #8b5cf6);
   /* 시계열 시리즈 팔레트 — 여러 선이 겹칠 때. 1 은 accent(합계), 2~5 는 컨테이너. 게이지 그라데이션과 같은 식구(시안·보라). */
-  --chart-1: #3d7bff; --chart-2: #22d3ee; --chart-3: #a78bfa; --chart-4: #f59e0b; --chart-5: #34d399;
   /* 순위 색(사용자 결정 2026-09-09) — 현재값(=전체)만 쨍한 파랑, 상위 1·2·3 은 무채색에 가까운 파랑에서 점점 옅어진다. 색이 종류가 아니라 순위를 말한다. */
   --now: #3d7bff; --rank-1: #6b7c99; --rank-2: #8d9cb5; --rank-3: #b0bcd0;
 }
@@ -22,7 +21,6 @@
   --accent: #2563eb; --info: #2563eb; --good: #0f9d58; --warn: #d97706; --bad: #dc2626;
   --terminal: #0f172a; --grid: #2563eb1f;
   --gauge: linear-gradient(90deg, #0891b2, #2563eb 55%, #6d28d9); /* 라이트는 시안을 한 단계 눌러 흰 글자가 읽힌다 */
-  --chart-1: #2563eb; --chart-2: #0891b2; --chart-3: #7c3aed; --chart-4: #d97706; --chart-5: #059669;
   --now: #2563eb; --rank-1: #64748b; --rank-2: #8593a8; --rank-3: #a7b2c2;
 }
 

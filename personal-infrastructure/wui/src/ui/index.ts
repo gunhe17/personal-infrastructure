@@ -2,7 +2,8 @@
 // 0 토큰
 export { Icon, ICONS, type IconName, type IconSize } from "./0-tokens/icon";
 export { POPUP, ITEM, SEG } from "./0-tokens/recipes";
-export { NOW, RANK, rankColor } from "./0-tokens/rank";
+export { NOW, RANK, rankColor, usageTone, usageColor, type UsageTone } from "./0-tokens/rank";
+export { formatGB, formatGBShort } from "@/lib/format";
 export { toneOf, type Tone } from "./0-tokens/tone";
 // 1 원자
 export { Button, Spinner, type ButtonVariant, type ButtonProps } from "./1-atoms/button";
@@ -84,7 +85,7 @@ export { TopProjects } from "./3-organisms/top-projects";
 export { EdgeRequests } from "./3-organisms/edge-requests";
 export { RecentDeploys } from "./3-organisms/recent-deploys";
 export { ResourceBand, ResourceBands, bandParts, type BandPart } from "./3-organisms/resource-band";
-export { DeviceList, deviceColor, deviceTone, formatGB, type Device } from "./3-organisms/device-list";
+export { DeviceList, type Device } from "./3-organisms/device-list";
 export { PageHeading } from "./3-organisms/page-heading";
 export { AppShell } from "./3-organisms/app-shell";
 export { SignInCard } from "./3-organisms/sign-in-card";

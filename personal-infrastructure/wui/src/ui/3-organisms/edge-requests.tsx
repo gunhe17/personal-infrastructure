@@ -13,10 +13,7 @@ const DOTS = ["6월", "7월", "8월"].map((label, mi) => ({ label, cells: Array.
 export function EdgeRequests() {
   return (
     <Card icon={<Icon name="user" />} title="엣지로 들어온 요청" actions={<Button variant="primary" size="sm">전체 통계</Button>}>
-      <div className="flex items-end justify-between gap-6">
-        <div><p className="text-display tabular-nums text-text">125,693</p><p className="mt-3 text-body text-mute">지난 24시간 요청</p></div>
-        <p className="text-body text-mute"><span className="text-info">20%</span> 목표에 가까워짐</p>
-      </div>
+      <div><p className="text-display tabular-nums text-text">125,693</p><p className="mt-3 text-body text-mute">지난 24시간 요청</p></div>
       <Gauge className="mt-8" value={0.72} start="10k" end="200k" />
       <Separator className="mt-5" />
       <div className="mt-5 flex gap-5"><StatusDot tone="idle">&lt;5k</StatusDot><StatusDot tone="info" muted>&gt;5k</StatusDot></div>
