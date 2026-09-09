@@ -47,12 +47,6 @@ const forecast = (h: number[], total: number) => {
 function V1() {
   return (
     <Card title="Devices" subtitle={`${DEVICES.length} mounts · ${GB(DEVICES.reduce((a, d) => a + d.total - used(d), 0))} free in total`}>
-      {/* 열 머리 — 오른쪽 그래프가 무엇을 그리는지 한 번만 말한다. 행마다 반복하지 않는다. */}
-      <div className="grid grid-cols-[180px_1fr_160px] items-baseline gap-6 border-b border-line pb-2 text-caption text-mute">
-        <span>Device</span>
-        <span>Used of capacity</span>
-        <span className="justify-self-end">Last 30 days</span>
-      </div>
       <div className="divide-y divide-line">
         {DEVICES.map((d) => {
           const pct = (used(d) / d.total) * 100;
@@ -66,17 +60,14 @@ function V1() {
                 </span>
                 <Progress value={pct} color={tone(d)} className="[&>div:first-child]:hidden" />
               </span>
-              <span className="justify-self-end text-end">
+              {/* 오른쪽 — 30일 변화. 축 양 끝을 그래프 아래에 늘 적어 둔다(사용자 지정 2026-09-09). */}
+              <span className="justify-self-end">
                 <Sparkline fluid points={d.hist} tone={pct > 60 ? "warn" : "accent"} height={32} className="block w-[160px]" />
+                <span className="mt-1 flex w-[160px] justify-between font-mono text-[11px] leading-4 text-mute"><span>30d ago</span><span>now</span></span>
               </span>
             </div>
           );
         })}
-      </div>
-      {/* 축 양 끝 — 마지막 행 아래에 한 번. 왼쪽이 30일 전, 오른쪽이 지금. */}
-      <div className="grid grid-cols-[180px_1fr_160px] gap-6 pt-2">
-        <span /><span />
-        <span className="flex justify-between font-mono text-[11px] leading-4 text-mute"><span>30d ago</span><span>now</span></span>
       </div>
     </Card>
   );
@@ -181,7 +172,7 @@ export function StorageLab() {
     <AppShell>
       <PageHeading crumbs={[{ label: "Home", href: "#" }, { label: "Lab" }, { label: "Devices" }]} title="Devices" meta={<><IconText icon="volume">How to show usage and trend in one row</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" />fake data · internal disk is 80% full</span></>} />
       <div className="mt-8">
-        <Option id="v1" title="V1 · Labels above the bar" from="시간 축은 열 머리 Last 30 days 와 아래 30d ago → now 로 한 번만 — 행마다 캡션을 반복하지 않는다" fit="값과 흐름이 각자 자리. 축은 카드가 한 번 말한다" ><V1 /></Option>
+        <Option id="v1" title="V1 · Labels above the bar" from="그래프 아래에 30d ago → now 를 늘 적어 축과 방향을 못박는다" fit="어느 행을 봐도 기간과 방향이 그 자리에 있다" ><V1 /></Option>
         <Option id="v2" title="V2 · Values inside the bar" from="라벨 줄을 없애고 값을 24px 막대 안으로. 트렌드는 작게" fit="행이 가장 낮다. 장치가 많을 때 목록이 짧아진다"><V2 /></Option>
         <Option id="v3" title="V3 · Chart-led row" from="오른쪽을 면적 차트로 키우고 총량은 점선, 끝에 현재값. 막대는 왼쪽 보조" fit="흐름이 주인공. 막대는 지금 비율만 거든다"><V3 /></Option>
         <Option id="v4" title="V4 · One picture — no bar" from="막대를 없애고 그래프만. 상한 점선까지의 거리가 곧 여유" fit="한 그림으로 끝난다. 대신 정확한 %는 안 보인다"><V4 /></Option>
