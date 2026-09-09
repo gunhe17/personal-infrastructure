@@ -237,8 +237,8 @@ Geist(본문·숫자) · Geist Mono(기술 값) · Pretendard 한글 폴백. 굵
 ## 캔버스 나열 규칙 (2026-09-08)
 
 - 라벨은 `이름 / 변형` 만. 한 행에는 같은 컴포넌트의 변형만.
-- 폭: 블록 컨트롤(Input·Select·Combobox·InputGroup·CopyField·Textarea·Search)·카드·목록은 트랙 640 을 꽉 채운다. 인라인 컨트롤(버튼·배지·칩·스위치·체크)은 제 폭. 특정 폭이 본질인 것만 고정(NavList 220 · Calendar 336 · SignInCard 400 · NumberField 208).
-- 크기: 컴포넌트는 항상 기본 크기(md)로 먼저, 변형 행에서 sm/lg. 샘플 데이터는 api·blog·worker / app.example.com / 127.0.0.1:20000 으로 통일.
+- 폭: 트랙은 **960**(2026-09-09: 640 에서 넓힘 — 리소스 유기체를 축소 없이 담으려고). 블록 컨트롤(Input·Select·Combobox·InputGroup·CopyField·Textarea·Search)·카드·목록은 트랙을 꽉 채운다. 인라인 컨트롤(버튼·배지·칩·스위치·체크)은 제 폭. 특정 폭이 본질인 것만 고정(NavList 220 · Calendar 336 · SignInCard 400 · NumberField 208).
+- 크기: 컴포넌트는 항상 기본 크기(md)로 먼저, 변형 행에서 sm/lg. **보드는 100% 로만 그린다** — 축소해 놓으면 캔버스 안에서 컴포넌트끼리 크기가 어긋나 보인다(사용자 지적 2026-09-09, `wide` 축소 렌더 제거). 유일한 예외는 템플릿(`frame`, 1280×800 을 50%)이고 그건 화면이지 컴포넌트가 아니다. 샘플 데이터는 api·blog·worker / app.example.com / 127.0.0.1:20000 으로 통일.
 - 대비 검수: 상태 요소(선택·활성·솔리드 채움)의 글자/바탕 대비를 두 테마에서 재고 4.5 미만이면 토큰을 고친다(accent 위 흰 글자 3.8 은 UI 텍스트로 허용).
 
 ## 템플릿 규격 (사용자 요청 2026-09-08 "규정 크기 정해놓고 일관성 있게")

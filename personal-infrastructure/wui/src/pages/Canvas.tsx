@@ -74,7 +74,7 @@ function ToastDemo() {
   return <div className="flex items-center gap-3"><Button onClick={() => toast.add({ title: "배포를 큐에 넣었다", description: "api · 워커가 곧 집어간다", type: "success" })}>성공 토스트</Button><Button onClick={() => toast.add({ title: "엣지 리로드 실패", description: ":80 을 다른 프로세스가 듣고 있다", type: "error" })}>오류 토스트</Button><Button variant="ghost" onClick={() => toast.add({ title: "인증서 갱신 중", type: "warning" })}>주의</Button></div>;
 }
 const PROJECTS = ROWS.map((r) => ({ value: r.id, label: `${r.name} · ${r.env}` }));
-type Item = { id: string; label: string; wide?: boolean; frame?: boolean; render: (s: State, set: Set) => React.ReactNode };
+type Item = { id: string; label: string; frame?: boolean; render: (s: State, set: Set) => React.ReactNode };
 // ITEMS 는 SECTIONS 와 같은 순서(0 토큰 → 4 템플릿, 그 안은 묶음 순)로 정렬해 둔다. 섹션 > 묶음(컨트롤·표시·바탕·차트·팝업…) > 컴포넌트 > 변형. 간격이 관계를 말한다 — 변형끼리 24, 다른 컴포넌트 56, 묶음 80, 섹션 96.
 type Cell = { title: string; items: string[] };
 type RowDef = { title: string; cells: Cell[] };
@@ -209,9 +209,9 @@ const ITEMS: Item[] = [
   { id: "o-edge", label: "EdgeRequests", render: () => <EdgeRequests /> },
   { id: "o-deploys", label: "RecentDeploys", render: () => <RecentDeploys /> },
   // 리소스 — 확정 규격(2026-09-09)
-  { id: "o-band", label: "ResourceBand / 기본 · 토글", wide: true, render: () => <div className="space-y-6"><ResourceBand label="CPU" value="34%" points={BAND_TOTAL} parts={BAND_PARTS} pct={34} max={100} format={(v) => `${v}%`} /><ResourceBand label="Disk I/O" value="11.1 MB/s" points={wave(3, 60, 11, 5)} parts={[{ name: "worker", value: "4.7 MB/s", share: 22, points: wave(6, 60, 5, 3) }, { name: "postgres", value: "3.9 MB/s", share: 18, points: wave(11, 60, 4, 2) }]} pct={55} format={(v) => `${v}M`} modes={[{ value: "sum", label: "Total" }, { value: "a", label: "Read" }, { value: "b", label: "Write" }]} /></div> },
-  { id: "o-bands", label: "ResourceBands / 카드", wide: true, render: () => <div><ResourceBands><div><ResourceBand label="CPU" value="34%" points={BAND_TOTAL} parts={BAND_PARTS} pct={34} max={100} format={(v) => `${v}%`} /></div><div><ResourceBand label="Memory" value="3.5 GB" points={wave(7, 60, 3.5, 0.4)} parts={[{ name: "api", value: "1.6 GB", share: 10 }, { name: "postgres", value: "0.9 GB", share: 6 }]} pct={22} max={16} format={(v) => `${v}G`} /></div></ResourceBands></div> },
-  { id: "o-devices", label: "DeviceList / 마운트 목록", wide: true, render: () => <DeviceList devices={[{ name: "Internal disk", used: 428, total: 512, history: RISE(407, 0.74) }, { name: "External SSD", used: 1300, total: 2000, history: RISE(1213, 3.0) }, { name: "Backup HDD", used: 1204, total: 4000, history: RISE(1150, 1.9) }]} /> },
+  { id: "o-band", label: "ResourceBand / 기본 · 토글", render: () => <div className="space-y-6"><ResourceBand label="CPU" value="34%" points={BAND_TOTAL} parts={BAND_PARTS} pct={34} max={100} format={(v) => `${v}%`} /><ResourceBand label="Disk I/O" value="11.1 MB/s" points={wave(3, 60, 11, 5)} parts={[{ name: "worker", value: "4.7 MB/s", share: 22, points: wave(6, 60, 5, 3) }, { name: "postgres", value: "3.9 MB/s", share: 18, points: wave(11, 60, 4, 2) }]} pct={55} format={(v) => `${v}M`} modes={[{ value: "sum", label: "Total" }, { value: "a", label: "Read" }, { value: "b", label: "Write" }]} /></div> },
+  { id: "o-bands", label: "ResourceBands / 카드", render: () => <div><ResourceBands><div><ResourceBand label="CPU" value="34%" points={BAND_TOTAL} parts={BAND_PARTS} pct={34} max={100} format={(v) => `${v}%`} /></div><div><ResourceBand label="Memory" value="3.5 GB" points={wave(7, 60, 3.5, 0.4)} parts={[{ name: "api", value: "1.6 GB", share: 10 }, { name: "postgres", value: "0.9 GB", share: 6 }]} pct={22} max={16} format={(v) => `${v}G`} /></div></ResourceBands></div> },
+  { id: "o-devices", label: "DeviceList / 마운트 목록", render: () => <DeviceList devices={[{ name: "Internal disk", used: 428, total: 512, history: RISE(407, 0.74) }, { name: "External SSD", used: 1300, total: 2000, history: RISE(1213, 3.0) }, { name: "Backup HDD", used: 1204, total: 4000, history: RISE(1150, 1.9) }]} /> },
   // ── 4 템플릿
   // ── 4 템플릿
   // 분석 대시보드
@@ -327,8 +327,8 @@ export function Canvas() {
           <IconButton size="sm" label="확대" icon="add" onClick={() => animateTo(zoomRef.current * 1.2)} />
         </div>
         <main ref={main} className="h-full overflow-auto bg-bg [background-image:radial-gradient(var(--grid)_1px,transparent_1px)] [background-size:24px_24px]" aria-label="캔버스">
-          {/* 리듬: 라벨→요소 8, 같은 컴포넌트의 변형끼리 24, 다른 컴포넌트 56, 섹션 96(+hairline). 라벨 트랙 120, 라벨↔콘텐츠 40, 콘텐츠 640. */}
-          <div ref={content} className="grid items-start gap-x-10 p-16" style={{ gridTemplateColumns: "120px 640px" }}>
+          {/* 리듬: 라벨→요소 8, 같은 컴포넌트의 변형끼리 24, 다른 컴포넌트 56, 섹션 96(+hairline). 라벨 트랙 120, 라벨↔콘텐츠 40, 콘텐츠 960(2026-09-09: 640 에서 넓힘 — 리소스 유기체를 축소 없이 100% 로 보려고). */}
+          <div ref={content} className="grid items-start gap-x-10 p-12" style={{ gridTemplateColumns: "120px 960px" }}>
             {SECTIONS.map((row, si) => (
               <div key={row.title} className={`col-span-2 grid items-start gap-x-10 ${si > 0 ? "mt-24 border-t border-line pt-12" : ""}`} style={{ gridTemplateColumns: "subgrid" }}>
                 <p className="sticky top-0 py-1 font-mono text-caption uppercase tracking-wide text-mute">{row.title}</p>
@@ -344,8 +344,8 @@ export function Canvas() {
                         return (
                           <div key={id} id={id} data-item className={i === 0 ? "" : same ? "mt-6" : "mt-14"}>
                             <p className="mb-2 truncate font-mono text-caption text-mute">{it.label}</p>
-                            {/* 템플릿(frame)은 규격 화면 1280×800 을 50% 로 — 캔버스 줌으로 키워 본다. wide 는 1120 을 640 에 맞춤 */}
-                            {it.frame ? <div className="h-[800px] w-[1280px] overflow-hidden rounded-card bg-bg ring-1 ring-line" style={{ zoom: 0.5 }}>{it.render(state, set)}</div> : it.wide ? <div className="w-[1120px] origin-top-left" style={{ zoom: 640 / 1120 }}>{it.render(state, set)}</div> : it.render(state, set)}
+                            {/* 템플릿(frame)만 규격 화면 1280×800 을 50% 로 축소한다. 그 외 컴포넌트는 전부 100% — 축소해 놓으면 캔버스 안에서 크기가 서로 어긋나 보인다(사용자 지적 2026-09-09). */}
+                            {it.frame ? <div className="h-[800px] w-[1280px] overflow-hidden rounded-card bg-bg ring-1 ring-line" style={{ zoom: 0.5 }}>{it.render(state, set)}</div> : it.render(state, set)}
                           </div>
                         );
                       })}
