@@ -1,4 +1,4 @@
-import { AppShell, bandParts, DeviceList, Dot, Switch, IconText, PageHeading, ResourceBand, ResourceBands } from "@/ui";
+import { Avatar, SideNav, StatusDot, AppShell, bandParts, DeviceList, Dot, Switch, IconText, PageHeading, ResourceBand, ResourceBands } from "@/ui";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 // Lab — 결정 전 후보를 실제 크기로 나란히 본다. 여기 있는 것은 아직 키트가 아니다. 선택되면 유기체/템플릿으로 옮긴다.
@@ -126,6 +126,10 @@ function StorageRow({ m }: { m: Metrics }) {
   );
 }
 
+const PROJECTS = [{ value: "api", label: "api" }, { value: "blog", label: "blog", tone: "running" as const }, { value: "worker", label: "worker", tone: "failed" as const }, { value: "postgres", label: "postgres", tone: "running" as const }];
+const ITEMS = [{ value: "overview", label: "Overview", icon: "insight" as const }, { value: "deployments", label: "Deployments", icon: "deploy" as const, count: 12 }, { value: "domains", label: "Domains", icon: "domain" as const, count: 3 }, { value: "storage", label: "Storage", icon: "volume" as const }, { value: "logs", label: "Logs", icon: "log" as const }, { value: "settings", label: "Settings", icon: "settings" as const }];
+const SYSTEM = [{ value: "resources", label: "Resources", icon: "monitor" as const }, { value: "backups", label: "Backups", icon: "backup" as const }, { value: "edge", label: "Edge", icon: "edge" as const }, { value: "jobs", label: "Jobs", icon: "job" as const }, { value: "audit", label: "Audit", icon: "audit" as const }];
+
 export function Lab() {
   const [live, setLive] = useState(true);
   const [split, setSplit] = useState(true);
@@ -133,7 +137,7 @@ export function Lab() {
   const up = 6 * 86400 + 4 * 3600 + m.tick;
   return (
     <SplitCtx.Provider value={split}>
-    <AppShell>
+    <AppShell nav={<SideNav projects={PROJECTS} project="api" items={ITEMS} item="resources" system={SYSTEM} status={<StatusDot tone="running">edge up</StatusDot>} user={<Avatar name="gunhee" size={32} />} />}>
       <PageHeading crumbs={[{ label: "Home", href: "#" }, { label: "Resources" }]} title="Resources" meta={<><IconText icon="server">homeserver · 8 cores · 16 GB</IconText><IconText icon="clock">Up {Math.floor(up / 86400)}d {Math.floor((up % 86400) / 3600)}h</IconText><IconText icon="project">{m.ct.length} containers running</IconText><span className="inline-flex items-center gap-2 text-body text-mute"><Dot tone="progress" pulse={live} />{live ? `Live · tick ${m.tick}` : "Paused"}</span></>} actions={<><Switch checked={split} onCheckedChange={setSplit} label="By container" boxed /><Switch checked={live} onCheckedChange={setLive} label="Live" boxed /></>} />
       <div className="mt-6 space-y-5">
         <ResourceBands>{RES.map((r) => <div key={r.id}><Band m={m} r={r} /></div>)}</ResourceBands>

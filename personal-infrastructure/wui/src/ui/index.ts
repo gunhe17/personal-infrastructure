@@ -88,6 +88,7 @@ export { ResourceBand, ResourceBands, bandParts, type BandPart } from "./3-organ
 export { DeviceList, type Device } from "./3-organisms/device-list";
 export { PageHeading } from "./3-organisms/page-heading";
 export { AppShell } from "./3-organisms/app-shell";
+export { SideNav, type NavItem, type NavProject } from "./3-organisms/side-nav";
 export { SignInCard } from "./3-organisms/sign-in-card";
 // 4 템플릿
 export { Analytics } from "./4-templates/analytics";

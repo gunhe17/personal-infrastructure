@@ -1,13 +1,16 @@
-// [유기체] AppShell = TopBar(Container 안) + Container 본문. stacked layout — 사이드바 없음.
+// [유기체] AppShell = SideNav 한 열 + 본문
 import { cn } from "@/lib/cn";
-import { Container } from "@/ui/1-atoms/container";
-import { TopBar } from "@/ui/3-organisms/top-bar";
 
-export function AppShell({ topbar, className, children }: { topbar?: React.ComponentProps<typeof TopBar>; className?: string; children: React.ReactNode }) {
+/**
+ * [유기체] AppShell — 서비스 뼈대(사용자 결정 2026-09-09: 왼쪽 한 열 + 본문, 상단 바 없음).
+ * `nav` 에 `SideNav` 를 넣는다. 사이드바 240 이 브랜드·프로젝트·항목·사용자를 다 지므로 본문은 안쪽 여백만 가진다.
+ * 좁은 화면(< lg)에서는 사이드바가 위로 올라가 가로로 스크롤되는 줄이 된다.
+ */
+export function AppShell({ nav, className, children }: { nav?: React.ReactNode; className?: string; children: React.ReactNode }) {
   return (
-    <div className={cn("min-h-full bg-bg", className)}>
-      <Container className="pt-4"><TopBar {...topbar} /></Container>
-      <Container className="py-6 sm:py-8">{children}</Container>
+    <div className={cn("flex min-h-full flex-col bg-bg lg:flex-row", className)}>
+      {nav}
+      <main className="min-w-0 flex-1 p-5 sm:p-8">{children}</main>
     </div>
   );
 }
